@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenHuman vs DisBot — 통합 에이전트 기준 프로젝트 비교 분석</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg-page: #FCFBF9; --bg-card: #FFFFFF; --bg-muted: #F7F6F4; --bg-sidebar: #FAFAF8;
+  --text-primary: #1E2432; --text-secondary: #6B7280; --text-tertiary: #9CA3AF;
+  --accent: #E85A4F; --accent-light: rgba(232,90,79,0.1);
+  --border: #EFEFEF; --border-sub: #E8E8E8;
+  --radius: 16px; --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+  --font-head: 'Outfit', sans-serif;
+  --font-body: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+  --mono: 'Cascadia Code', 'Fira Code', monospace;
+  --sidebar-w: 260px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-body); background: var(--bg-page); color: var(--text-primary); line-height: 1.7; }
+
+.sidebar { position:fixed; top:0; left:0; width:var(--sidebar-w); height:100vh; background:var(--bg-sidebar); border-right:1px solid var(--border); overflow-y:auto; z-index:1000; display:flex; flex-direction:column; }
+.sidebar-header { padding:28px 24px 20px; border-bottom:1px solid var(--border); }
+.sidebar-header h2 { font-family:var(--font-head); font-size:1.1rem; font-weight:700; color:var(--text-primary); }
+.sidebar-header p { font-size:0.75rem; color:var(--text-tertiary); font-weight:500; margin-top:4px; }
+.sidebar-nav { flex:1; padding:16px 0; overflow-y:auto; }
+.sidebar-nav a { display:flex; align-items:center; gap:12px; padding:10px 24px; color:var(--text-secondary); text-decoration:none; font-size:0.85rem; font-weight:500; border-left:3px solid transparent; transition:all 0.2s; }
+.sidebar-nav a:hover { color:var(--text-primary); background:var(--bg-muted); }
+.sidebar-nav a.active { color:var(--accent); background:var(--accent-light); border-left-color:var(--accent); }
+.sidebar-nav .nav-num { width:24px; height:24px; border-radius:6px; background:var(--bg-muted); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:var(--font-head); font-size:0.7rem; font-weight:600; color:var(--text-tertiary); flex-shrink:0; }
+.sidebar-nav a.active .nav-num { background:var(--accent); border-color:var(--accent); color:#fff; }
+.sidebar-footer { padding:16px 24px; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-tertiary); }
+
+.main-content { margin-left:var(--sidebar-w); min-height:100vh; }
+.content-wrapper { max-width:980px; margin:0 auto; padding:48px; }
+
+.hero { background:linear-gradient(135deg, #FCFBF9 0%, #F0EEF5 50%, #EDF5F0 100%); padding:56px 48px; margin:-48px -48px 48px; border-bottom:1px solid var(--border); border-radius:0 0 24px 24px; position:relative; }
+.hero::before { content:''; position:absolute; top:0; left:48px; width:40px; height:3px; background:var(--accent); border-radius:2px; }
+.hero-content { padding-top:16px; }
+.hero h1 { font-family:var(--font-head); font-size:2.2rem; font-weight:600; letter-spacing:-0.02em; color:var(--text-primary); line-height:1.2; margin-bottom:12px; }
+.hero .subtitle { font-family:var(--font-head); font-size:1.05rem; color:var(--text-secondary); font-weight:500; margin-bottom:20px; }
+.hero .description { font-size:0.92rem; color:var(--text-tertiary); max-width:640px; line-height:1.7; }
+.hero-meta { display:flex; gap:24px; margin-top:24px; flex-wrap:wrap; }
+.hero-meta-item { font-family:var(--font-head); font-size:0.78rem; font-weight:500; color:var(--text-secondary); padding:6px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; }
+
+.section { margin-bottom:56px; opacity:0; transform:translateY(20px); transition:opacity 0.6s, transform 0.6s; }
+.section.visible { opacity:1; transform:translateY(0); }
+.section-header { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.section-line { width:24px; height:2px; background:var(--accent); border-radius:1px; }
+.section-label { font-family:var(--font-head); font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:2px; color:var(--text-tertiary); }
+.section-title { font-family:var(--font-head); font-size:1.4rem; font-weight:600; color:var(--text-primary); margin-bottom:8px; }
+.section-desc { color:var(--text-secondary); margin-bottom:24px; font-size:0.92rem; }
+.section h3 { font-family:var(--font-head); font-size:1.05rem; font-weight:600; color:var(--text-primary); margin:24px 0 12px; }
+.section p { margin-bottom:12px; color:var(--text-secondary); font-size:0.92rem; }
+.section ul { margin:12px 0 16px 20px; color:var(--text-secondary); font-size:0.92rem; }
+.section ul li { margin-bottom:6px; }
+.section strong { color:var(--text-primary); font-weight:600; }
+
+.stat-cards { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin:24px 0; }
+.stat-card { background:var(--bg-card); border-radius:var(--radius); padding:24px 20px; box-shadow:var(--shadow-sm); text-align:center; border:1px solid var(--border); }
+.stat-card .stat-value { font-family:var(--font-head); font-size:2rem; font-weight:700; color:var(--text-primary); }
+.stat-card .stat-label { font-size:0.8rem; color:var(--text-tertiary); font-weight:500; margin-top:6px; }
+.stat-card.accent .stat-value { color:var(--accent); }
+
+.compare-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:20px; margin:24px 0; }
+.compare-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; box-shadow:var(--shadow-sm); }
+.compare-card h4 { font-family:var(--font-head); font-size:1.05rem; font-weight:600; margin-bottom:6px; color:var(--text-primary); }
+.compare-card .compare-tag { display:inline-block; font-family:var(--font-head); font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; padding:3px 8px; border-radius:6px; margin-bottom:12px; }
+.compare-card.openhuman .compare-tag { background:#F0F4F8; color:#3B5570; border:1px solid #A8C4DC; }
+.compare-card.disbot .compare-tag { background:#EDF5F0; color:#3A5548; border:1px solid #A0C8B0; }
+.compare-card ul { font-size:0.86rem; margin:8px 0 0 18px; }
+.compare-card .compare-summary { font-size:0.88rem; color:var(--text-secondary); margin-bottom:14px; line-height:1.6; }
+
+.mermaid-wrapper { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin:24px 0; overflow-x:auto; }
+.mermaid { display:flex; justify-content:center; }
+
+.chart-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:20px; margin:24px 0; }
+.chart-container { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; }
+.chart-container h4 { font-family:var(--font-head); font-size:0.9rem; font-weight:600; margin-bottom:16px; color:var(--text-primary); }
+.chart-container canvas { max-height:300px; }
+.chart-full { grid-column: 1 / -1; }
+
+.data-table-wrapper { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow-x:auto; margin:24px 0; }
+.data-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+.data-table th { background:var(--bg-muted); color:var(--text-primary); padding:14px 16px; text-align:left; font-family:var(--font-head); font-weight:600; font-size:0.8rem; border-bottom:1px solid var(--border); }
+.data-table td { padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-secondary); vertical-align:top; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tr:hover td { background:var(--bg-muted); }
+.data-table code { font-family:var(--mono); font-size:0.78rem; background:var(--bg-muted); padding:2px 6px; border-radius:4px; border:1px solid var(--border); }
+.score-pill { display:inline-block; padding:2px 8px; border-radius:6px; font-family:var(--font-head); font-weight:600; font-size:0.78rem; }
+.score-pill.high { background:#EDF5F0; color:#3A5548; border:1px solid #A0C8B0; }
+.score-pill.mid { background:#F0EEF5; color:#5A5570; border:1px solid #A8A0C0; }
+.score-pill.low { background:#F5EEF2; color:#6A4858; border:1px solid #C8B0BC; }
+
+.edu-box { border-radius:var(--radius); padding:20px 24px; margin:20px 0; font-size:0.9rem; border:1px solid; border-left-width:4px; }
+.edu-box .edu-title { font-family:var(--font-head); font-weight:600; font-size:0.85rem; margin-bottom:8px; }
+.edu-box.insight { background:var(--accent-light); border-color:rgba(232,90,79,0.2); border-left-color:var(--accent); }
+.edu-box.insight .edu-title { color:var(--accent); }
+.edu-box.note { background:#F0EEF5; border-color:rgba(168,160,192,0.3); border-left-color:#A8A0C0; }
+.edu-box.note .edu-title { color:#5A5570; }
+.edu-box.warning { background:#FEF3C7; border-color:rgba(180,83,9,0.2); border-left-color:#B45309; }
+.edu-box.warning .edu-title { color:#B45309; }
+.edu-box.success { background:#E8F5E9; border-color:rgba(46,125,50,0.2); border-left-color:#2E7D32; }
+.edu-box.success .edu-title { color:#2E7D32; }
+.edu-box.section-summary { background:var(--bg-muted); border-color:var(--border); border-left-color:var(--text-secondary); }
+.edu-box.section-summary .edu-title { color:var(--text-primary); }
+
+.phase-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin:24px 0; }
+.phase-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:22px 20px; box-shadow:var(--shadow-sm); position:relative; }
+.phase-card::before { content:''; position:absolute; top:0; left:20px; width:32px; height:3px; background:var(--accent); border-radius:2px; }
+.phase-card .phase-num { font-family:var(--font-head); font-size:0.7rem; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text-tertiary); margin-top:8px; }
+.phase-card h4 { font-family:var(--font-head); font-size:1rem; font-weight:600; color:var(--text-primary); margin:6px 0 10px; }
+.phase-card p { font-size:0.85rem; color:var(--text-secondary); line-height:1.6; }
+.phase-card code { font-family:var(--mono); font-size:0.75rem; background:var(--bg-muted); padding:1px 5px; border-radius:4px; }
+
+pre { background:#1E293B; border-radius:8px; padding:18px; overflow-x:auto; margin:14px 0; }
+pre code { color:#E2E8F0; font-family:var(--mono); font-size:0.82rem; line-height:1.6; }
+
+.scroll-top { position:fixed; bottom:2rem; right:2rem; width:44px; height:44px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:1.2rem; cursor:pointer; box-shadow:0 4px 12px rgba(232,90,79,0.3); display:none; z-index:100; }
+
+.mobile-toggle { display:none; position:fixed; top:16px; left:16px; z-index:1001; width:40px; height:40px; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border); border-radius:10px; font-size:1.2rem; cursor:pointer; box-shadow:var(--shadow-sm); }
+@media (max-width:768px) {
+  .sidebar { transform:translateX(-100%); transition:transform 0.3s; }
+  .sidebar.open { transform:translateX(0); }
+  .mobile-toggle { display:flex; align-items:center; justify-content:center; }
+  .main-content { margin-left:0; }
+  .content-wrapper { padding:24px 16px; }
+  .hero { padding:40px 20px; margin:-24px -16px 32px; }
+  .stat-cards { grid-template-columns:repeat(2, 1fr); }
+  .chart-grid { grid-template-columns:1fr; }
+  .compare-grid { grid-template-columns:1fr; }
+}
+@media print {
+  .sidebar, .mobile-toggle, .scroll-top { display:none !important; }
+  .main-content { margin-left:0; }
+  .section { opacity:1 !important; transform:none !important; }
+}
+</style>
+</head>
+<body>
+<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h2>통합 에이전트 비교</h2>
+    <p>OpenHuman vs DisBot</p>
+  </div>
+  <div class="sidebar-nav">
+    <a href="#s1"><span class="nav-num">1</span> 핵심 요약</a>
+    <a href="#s2"><span class="nav-num">2</span> 프로젝트 개요</a>
+    <a href="#s3"><span class="nav-num">3</span> 아키텍처 비교</a>
+    <a href="#s4"><span class="nav-num">4</span> 정량 지표</a>
+    <a href="#s5"><span class="nav-num">5</span> 장단점 매트릭스</a>
+    <a href="#s6"><span class="nav-num">6</span> 기준 프로젝트 결정</a>
+    <a href="#s7"><span class="nav-num">7</span> 통합 로드맵</a>
+    <a href="#s8"><span class="nav-num">8</span> 배제·리스크</a>
+    <a href="#s9"><span class="nav-num">9</span> 결론</a>
+  </div>
+  <div class="sidebar-footer">2026-05-12 · 분석 리포트</div>
+</nav>
+<div class="main-content">
+  <div class="content-wrapper">
+    <div class="hero" id="hero">
+      <div class="hero-content">
+        <h1>OpenHuman vs DisBot</h1>
+        <p class="subtitle">통합 에이전트 기준 프로젝트 비교 분석 리포트</p>
+        <p class="description">두 프로젝트의 스택·아키텍처·성숙도·보안 모델을 비교하고, 통합 에이전트(Unified Agent) 구축 시 어느 프로젝트를 아키텍처 기반으로 채택해야 하는지에 대한 권장안과 단계별 통합 로드맵을 제시합니다.</p>
+        <div class="hero-meta">
+          <span class="hero-meta-item">Rust + React 데스크톱</span>
+          <span class="hero-meta-item">Python + Discord 봇</span>
+          <span class="hero-meta-item">분석일 2026-05-12</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 1 -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 01 · Executive Summary</span>
+      </div>
+      <h2 class="section-title">핵심 요약</h2>
+      <p class="section-desc">분석 결과를 한눈에 보여주는 핵심 지표와 결론입니다.</p>
+
+      <div class="stat-cards">
+        <div class="stat-card accent">
+          <div class="stat-value">OpenHuman</div>
+          <div class="stat-label">기준 프로젝트 추천</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">1,068</div>
+          <div class="stat-label">OpenHuman Rust 파일</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">615</div>
+          <div class="stat-label">OpenHuman TS·TSX 파일</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">264</div>
+          <div class="stat-label">테스트 파일 (Vitest+WDIO+cargo)</div>
+        </div>
+      </div>
+
+      <div class="edu-box insight">
+        <div class="edu-title">결정 요지</div>
+        OpenHuman은 운영 단계(v0.53.29)의 크로스 플랫폼 데스크톱 에이전트로 멀티 채널·메모리·OAuth 통합·관측 인프라가 이미 갖춰져 있습니다. DisBot은 보안 우선 설계와 위협 모델 문서화가 강점이지만, 인터페이스 정의만 완료된 알파/베타 단계입니다. <strong>OpenHuman을 아키텍처 기반으로 채택하고, DisBot의 보안·감사·비용 통제 설계를 신규 도메인 모듈로 이식</strong>하는 것이 ROI가 가장 높은 경로입니다.
+      </div>
+
+      <div class="edu-box section-summary">
+        <div class="edu-title">한 줄 결론</div>
+        <strong>OpenHuman을 base로, DisBot을 security·audit·cost 도메인 자료원으로</strong> — 두 프로젝트의 강점을 양방향이 아닌 단방향 흡수로 결합합니다.
+      </div>
+    </div>
+
+    <!-- SECTION 2 -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 02 · Project Overview</span>
+      </div>
+      <h2 class="section-title">프로젝트 개요</h2>
+      <p class="section-desc">각 프로젝트의 정체성, 스택, 성숙도, 타깃 사용자를 정의합니다.</p>
+
+      <div class="compare-grid">
+        <div class="compare-card openhuman">
+          <span class="compare-tag">Project A</span>
+          <h4>OpenHuman</h4>
+          <p class="compare-summary">Rust 코어 + React/TS + Tauri v2 데스크톱 앱. 메모리 우선(memory-first) 통합 AI 에이전트 플랫폼.</p>
+          <ul>
+            <li><strong>스택</strong>: Rust · TypeScript · Tauri v2 (CEF)</li>
+            <li><strong>버전</strong>: v0.53.29 (활발한 운영)</li>
+            <li><strong>플랫폼</strong>: Windows · macOS · Linux</li>
+            <li><strong>채널</strong>: Telegram, Discord, Slack, WhatsApp, iMessage, Matrix 등 7+</li>
+            <li><strong>OAuth</strong>: 118+ 커넥터</li>
+            <li><strong>메모리</strong>: SQLite + 트리 요약 + Obsidian export</li>
+            <li><strong>관측</strong>: Sentry · OpenTelemetry · Prometheus</li>
+          </ul>
+        </div>
+        <div class="compare-card disbot">
+          <span class="compare-tag">Project B</span>
+          <h4>DisBot</h4>
+          <p class="compare-summary">Python 기반 Windows 단일 사용자 Claude/Ollama 디스코드 봇. 보안 우선 설계.</p>
+          <ul>
+            <li><strong>스택</strong>: Python 3.10+ · Node.js(Claude Code CLI)</li>
+            <li><strong>단계</strong>: Alpha/Beta (설계 우수, 구현 부분 완료)</li>
+            <li><strong>플랫폼</strong>: Windows 전용 (서비스/트레이/DPAPI)</li>
+            <li><strong>채널</strong>: Discord 주력 · Telegram/Slack 예정</li>
+            <li><strong>LLM</strong>: Claude CLI subprocess + Ollama 폴백</li>
+            <li><strong>보안</strong>: 5계층 방어 + 플러그인 deny-all 권한제</li>
+            <li><strong>특징</strong>: OpenClaw CVE 학습 위협 모델 문서화</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="edu-box note">
+        <div class="edu-title">Why the gap matters</div>
+        OpenHuman은 "운영 중인 제품", DisBot은 "설계 단계의 보안 봇"입니다. 두 프로젝트는 규모·완성도·타깃이 본질적으로 다르므로 동등 비교가 아닌 <strong>"기반과 자료원"</strong>의 비대칭 통합이 합리적입니다.
+      </div>
+    </div>
+
+    <!-- SECTION 3 -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 03 · Architecture</span>
+      </div>
+      <h2 class="section-title">아키텍처 비교</h2>
+      <p class="section-desc">두 프로젝트의 데이터·실행 흐름과 모듈 경계를 시각화합니다.</p>
+
+      <h3>OpenHuman 데이터 흐름</h3>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+flowchart LR
+  direction TB
+  User[사용자] --> UI[React UI<br>app/src]
+  UI --> Tauri[Tauri Shell<br>app/src-tauri]
+  Tauri --> Relay[core_rpc_relay<br>JSON-RPC over HTTP]
+  Relay --> Core[Rust Core<br>openhuman_core]
+  Core --> Domains[Domain Modules<br>agent · memory · channels · skills]
+  Core --> SQLite[(SQLite<br>memory tree)]
+  Core --> LLM[Compatible Layer<br>OpenAI / Local / Anthropic]
+  Tauri --> CEF[CEF Webviews<br>Gmail · Slack · Discord · WhatsApp]
+  CEF --> Scanners[Native Scanners<br>CDP automation]
+  Domains --> OAuth[118+ OAuth Providers]
+  Core --> Obs[Sentry · OTel · Prometheus]
+        </div>
+      </div>
+
+      <h3>DisBot 데이터 흐름</h3>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+flowchart LR
+  direction TB
+  Discord[Discord 사용자] --> Bot[bot.py<br>discord.py]
+  Bot --> Router[BaseChannelRouter]
+  Router --> Gateway[BaseGateway<br>오케스트레이터]
+  Gateway --> Guard[InputGuard<br>프롬프트 인젝션 필터]
+  Guard --> AuditPre[AuditLogger<br>pre-exec]
+  AuditPre --> Executor{Executor 선택}
+  Executor --> Claude[ClaudeExecutor<br>Claude Code CLI subprocess]
+  Executor --> Ollama[OllamaExecutor<br>localhost:11434]
+  Claude --> AuditPost[AuditLogger<br>post-exec]
+  Ollama --> AuditPost
+  AuditPost --> Context[ContextManager<br>세션 히스토리]
+  Context --> Bot
+  Bot --> Files[(~/.claude-bridge<br>JSONL 비용·감사 로그)]
+        </div>
+      </div>
+
+      <div class="edu-box note">
+        <div class="edu-title">관찰</div>
+        OpenHuman은 <strong>분산 시스템 형태(코어 sidecar + UI 호스트 + 네이티브 스캐너)</strong>이고, DisBot은 <strong>단일 프로세스 파이프라인(가드→감사→실행자→컨텍스트)</strong>입니다. DisBot의 파이프라인은 OpenHuman 코어의 RPC 핸들러 내부에 미들웨어로 이식 가능합니다.
+      </div>
+    </div>
+
+    <!-- SECTION 4 -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 04 · Quantitative</span>
+      </div>
+      <h2 class="section-title">정량 지표</h2>
+      <p class="section-desc">코드 규모·테스트·범위를 측정 가능한 형태로 비교합니다.</p>
+
+      <div class="chart-grid">
+        <div class="chart-container">
+          <h4>코드 규모 (파일 수)</h4>
+          <canvas id="chartScale"></canvas>
+        </div>
+        <div class="chart-container">
+          <h4>채널·프로바이더 커버리지</h4>
+          <canvas id="chartCoverage"></canvas>
+        </div>
+        <div class="chart-container chart-full">
+          <h4>역량 평가 (0–10 점수, 종합 평가)</h4>
+          <canvas id="chartRadar"></canvas>
+        </div>
+      </div>
+
+      <div class="edu-box insight">
+        <div class="edu-title">읽는 법</div>
+        OpenHuman은 <strong>플랫폼 범위·관측·테스트</strong>에서 압도적이고, DisBot은 <strong>보안 문서화·비용 추적</strong>에서 우위입니다. 통합 시 OpenHuman의 약점 영역(security 도메인 문서화, cost guard UI)에 DisBot 자료를 투입하면 종합 점수를 끌어올릴 수 있습니다.
+      </div>
+    </div>
+
+    <!-- SECTION 5 -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 05 · Pros &amp; Cons</span>
+      </div>
+      <h2 class="section-title">장단점 매트릭스</h2>
+      <p class="section-desc">13개 평가축에서 두 프로젝트를 정량 비교한 결과입니다.</p>
+
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>평가축</th>
+              <th>OpenHuman</th>
+              <th>DisBot</th>
+              <th>우위</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>성숙도 / 운영</td><td><span class="score-pill high">9</span> 운영 단계 v0.53</td><td><span class="score-pill mid">4</span> 인터페이스 정의 위주</td><td>OpenHuman</td></tr>
+            <tr><td>플랫폼 범위</td><td><span class="score-pill high">10</span> Win/Mac/Linux</td><td><span class="score-pill low">3</span> Windows 전용</td><td>OpenHuman</td></tr>
+            <tr><td>채널 다양성</td><td><span class="score-pill high">10</span> 7+ 메신저, 118+ OAuth</td><td><span class="score-pill mid">4</span> Discord 중심</td><td>OpenHuman</td></tr>
+            <tr><td>메모리·RAG</td><td><span class="score-pill high">9</span> 트리·청크·자동 동기화</td><td><span class="score-pill low">3</span> 세션 컨텍스트만</td><td>OpenHuman</td></tr>
+            <tr><td>LLM 유연성</td><td><span class="score-pill high">8</span> <code>compatible.rs</code> · 모델 라우팅</td><td><span class="score-pill mid">5</span> Claude CLI + Ollama 하드코딩</td><td>OpenHuman</td></tr>
+            <tr><td>보안 모델 문서화</td><td><span class="score-pill mid">6</span> 코드에 분산</td><td><span class="score-pill high">9</span> 위협 매트릭스 명시</td><td>DisBot</td></tr>
+            <tr><td>플러그인 샌드박스</td><td><span class="score-pill mid">6</span> 스킬 시스템 (격리 부분적)</td><td><span class="score-pill high">9</span> 권한제 + 코드 스캔 + 격리</td><td>DisBot</td></tr>
+            <tr><td>비용·감사 추적</td><td><span class="score-pill mid">7</span> Sentry/메트릭</td><td><span class="score-pill high">8</span> 한도/JSONL/예산 알림</td><td>DisBot</td></tr>
+            <tr><td>테스트 인프라</td><td><span class="score-pill high">9</span> Vitest+WDIO+cargo (264개)</td><td><span class="score-pill mid">5</span> pytest 구조만</td><td>OpenHuman</td></tr>
+            <tr><td>UI / UX</td><td><span class="score-pill high">9</span> 풀 데스크톱 앱</td><td><span class="score-pill low">3</span> TUI + Discord 메시지</td><td>OpenHuman</td></tr>
+            <tr><td>배포 / 업데이트</td><td><span class="score-pill high">9</span> 자동 업데이터</td><td><span class="score-pill low">3</span> 배치 스크립트</td><td>OpenHuman</td></tr>
+            <tr><td>러닝 커브</td><td><span class="score-pill mid">5</span> Rust + TS + Tauri</td><td><span class="score-pill high">8</span> Python 단일 스택</td><td>DisBot</td></tr>
+            <tr><td>유지보수 부담</td><td><span class="score-pill mid">5</span> 무거움 (40+ 프로바이더)</td><td><span class="score-pill high">8</span> 가벼움 (단, 미완)</td><td>DisBot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="edu-box section-summary">
+        <div class="edu-title">매트릭스 해석</div>
+        <strong>OpenHuman은 11개 축 중 9개에서 우위</strong>이며 특히 운영·플랫폼·채널·테스트 같은 인프라성 항목에서 압도적입니다. DisBot의 우위 4개 항목(보안 문서·샌드박스·비용 추적·러닝 커브)은 모두 <strong>"OpenHuman으로 이식 가능한 설계/문서 자산"</strong>입니다.
+      </div>
+    </div>
+
+    <!-- SECTION 6 -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 06 · Decision</span>
+      </div>
+      <h2 class="section-title">기준 프로젝트 결정</h2>
+      <p class="section-desc">통합 에이전트(Unified Agent)의 아키텍처 기반을 선택하는 의사결정 근거입니다.</p>
+
+      <div class="edu-box insight">
+        <div class="edu-title">결정</div>
+        <strong>OpenHuman을 통합 에이전트의 기반(architectural base)으로 채택</strong>합니다. DisBot은 보안·감사·비용 통제·플러그인 샌드박스 설계의 <strong>자료원(source-of-design)</strong>으로 활용합니다.
+      </div>
+
+      <h3>결정의 5가지 근거</h3>
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>근거</th>
+              <th>구체 내용</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>어려운 부분이 구현 완료</td>
+              <td>멀티 플랫폼, 멀티 채널, 메모리 트리, OAuth 118+, JSON-RPC 디스패치, MCP 클라이언트, 자동 업데이터가 운영 단계로 갖춰져 있어 DisBot 위에 처음부터 쌓는 비용을 회피할 수 있습니다.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>DisBot은 인터페이스 정의 단계</td>
+              <td><code>gateway.py</code>·트레이·서비스 모듈이 스텁 상태, 웹 대시보드는 의존성만 선언. 기반으로 삼으면 사실상 새로 만드는 비용 발생.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>강점이 단방향 이식 가능</td>
+              <td>DisBot 강점은 "설계·문서·작은 모듈" — OpenHuman 도메인 디렉터리에 <code>src/openhuman/security/</code> 형태로 추가하기 용이.</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>플랫폼 흡수 비대칭</td>
+              <td>Windows-native(DPAPI/트레이/서비스)는 OpenHuman Tauri 셸이 이미 커버하거나 모듈 추가가 쉬움. 반대로 OpenHuman → DisBot은 macOS/Linux를 새로 짜야 함.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>단일 사용자 제약은 통합 에이전트 목표와 충돌</td>
+              <td>DisBot은 보안 단순화를 위해 단일 사용자 모델을 의도적으로 채택했으나, 통합 에이전트는 다채널·다계정·팀 단위 사용 전제. OpenHuman 모델이 목표에 부합.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECTION 7 -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 07 · Roadmap</span>
+      </div>
+      <h2 class="section-title">통합 로드맵</h2>
+      <p class="section-desc">OpenHuman 기반 위에 DisBot 강점을 단계적으로 이식하는 5단계 실행 계획입니다.</p>
+
+      <div class="phase-grid">
+        <div class="phase-card">
+          <div class="phase-num">Phase 01</div>
+          <h4>보안·감사 도메인 이식</h4>
+          <p><code>src/openhuman/security/</code> 신규 도메인 추가. <code>prompt_injection_guard.rs</code>, <code>audit/</code>(JSONL pre/post 로깅), <code>cost_guard.rs</code>(예산 한도). 컨트롤러 스키마는 <code>src/openhuman/security/schemas.rs</code>에 정의 후 <code>src/core/all.rs</code> 와이어업.</p>
+        </div>
+        <div class="phase-card">
+          <div class="phase-num">Phase 02</div>
+          <h4>스킬 샌드박스 강화</h4>
+          <p>DisBot <code>PluginSandbox</code>의 권한제·코드 스캐너를 OpenHuman 스킬 시스템에 맵핑. <code>src/openhuman/skills/permissions.rs</code>(deny-all 디폴트), <code>integrity.rs</code>(SHA-256 매니페스트). WDIO E2E로 권한 거부 시나리오 검증.</p>
+        </div>
+        <div class="phase-card">
+          <div class="phase-num">Phase 03</div>
+          <h4>Discord 채널 보강</h4>
+          <p>OpenHuman <code>src/openhuman/channels/discord/</code>에 슬래시 명령 표준화·첨부 파이프라인 보강. DisBot의 Claude CLI subprocess 방식은 채택하지 않고 <code>compatible.rs</code> HTTP 경로 사용.</p>
+        </div>
+        <div class="phase-card">
+          <div class="phase-num">Phase 04</div>
+          <h4>비용·요금제 UI</h4>
+          <p><code>app/src/components/settings/</code>에 일·주·월 누적 비용 대시보드, 한도 게이지, 경고 토스트 추가. 데이터 소스는 Phase 1의 <code>cost_guard</code> RPC.</p>
+        </div>
+        <div class="phase-card">
+          <div class="phase-num">Phase 05</div>
+          <h4>위협 모델 문서화</h4>
+          <p><code>gitbooks/developing/security.md</code> 신설 — DisBot <code>ANALYSIS.md</code>의 위협 매트릭스를 OpenHuman 컨텍스트로 재작성. <code>SECURITY.md</code> 업데이트, 침해 보고 채널 명시.</p>
+        </div>
+      </div>
+
+      <h3>도메인 추가 코드 스케치 (CLAUDE.md 규칙 준수)</h3>
+<pre><code>// src/openhuman/security/mod.rs
+pub mod audit;
+pub mod cost_guard;
+pub mod prompt_injection_guard;
+pub mod permissions;
+pub mod schemas;
+
+pub use schemas::{
+    all_controller_schemas as all_security_controller_schemas,
+    all_registered_controllers as all_security_registered_controllers,
+};</code></pre>
+
+      <div class="edu-box success">
+        <div class="edu-title">결과 기대치</div>
+        Phase 1–2 완료 시 통합 에이전트는 <strong>OpenHuman의 운영 안정성 + DisBot의 보안 명시성</strong>을 동시에 확보합니다. Phase 3–4는 사용자 가시 가치(비용 예측 가능성), Phase 5는 거버넌스·감사 대응(컴플라이언스)에 기여합니다.
+      </div>
+    </div>
+
+    <!-- SECTION 8 -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 08 · Exclusions</span>
+      </div>
+      <h2 class="section-title">배제 항목과 리스크</h2>
+      <p class="section-desc">통합 시 의도적으로 채택하지 않을 DisBot 요소와, 예상되는 통합 리스크입니다.</p>
+
+      <h3>DisBot에서 채택하지 않을 것</h3>
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr><th>항목</th><th>배제 사유</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code CLI subprocess 호출</td><td>지연·CLI 버전 결합·스트리밍 부재. OpenHuman <code>compatible.rs</code> HTTP 경로가 우수.</td></tr>
+            <tr><td>단일 사용자 가정</td><td>통합 에이전트는 다계정·다채널·팀 단위 사용 전제.</td></tr>
+            <tr><td>파일 전용 영속화(JSONL 한정)</td><td>OpenHuman SQLite + 메모리 트리가 이미 우월. 감사 로그만 JSONL로 보조 사용.</td></tr>
+            <tr><td>Python 런타임</td><td>코어가 Rust인데 Python 추가 시 배포·보안 표면 확대.</td></tr>
+            <tr><td>FastAPI 웹 대시보드</td><td>OpenHuman은 Tauri 데스크톱 UI가 표준.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>통합 리스크</h3>
+      <div class="edu-box warning">
+        <div class="edu-title">Risk · 도메인 비대화</div>
+        OpenHuman 코어는 이미 1,068 파일 규모. <code>security</code> 도메인 추가가 또 다른 무게로 작용할 수 있습니다. <strong>완화책</strong>: 각 보안 컴포넌트를 단일 책임으로 분리하고, <code>mod.rs</code>는 light export만 유지합니다(CLAUDE.md 규칙).
+      </div>
+      <div class="edu-box warning">
+        <div class="edu-title">Risk · 비용 가드 UX 충돌</div>
+        OpenHuman 사용자는 비용 한도 알림에 익숙하지 않을 수 있습니다. <strong>완화책</strong>: opt-in으로 시작하고, 예산 설정 시에만 가드가 활성화되도록 설계합니다.
+      </div>
+      <div class="edu-box warning">
+        <div class="edu-title">Risk · 보안 문서 노후화</div>
+        DisBot의 위협 매트릭스는 2024–2025년 CVE 기반. OpenHuman 컨텍스트(CEF 웹뷰 스캐너, OAuth 토큰 관리)는 위협 표면이 다릅니다. <strong>완화책</strong>: 단순 이식이 아닌 <strong>재작성</strong>하며, Tauri/CEF 특유 위협(JS 인젝션, IPC 권한)에 맞춰 갱신합니다.
+      </div>
+    </div>
+
+    <!-- SECTION 9 -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <span class="section-line"></span>
+        <span class="section-label">Section 09 · Conclusion</span>
+      </div>
+      <h2 class="section-title">결론</h2>
+      <p class="section-desc">통합 에이전트 구축을 위한 최종 권장 사항입니다.</p>
+
+      <div class="edu-box insight">
+        <div class="edu-title">최종 권장</div>
+        <strong>OpenHuman을 통합 에이전트의 기준(architectural base)으로 채택</strong>하고, DisBot은 <strong>보안·감사·비용 통제·플러그인 샌드박스 설계의 자료원</strong>으로 사용합니다. OpenHuman은 멀티 플랫폼·멀티 채널·메모리·OAuth·관측 인프라가 운영 단계로 완비되어 통합 에이전트의 80%를 이미 충족하며, DisBot의 핵심 가치(위협 모델·플러그인 권한제·비용 한도·감사 로그)는 신규 도메인 <code>src/openhuman/security/</code>로 이식하는 것이 ROI가 가장 높습니다.
+      </div>
+
+      <h3>실행 우선순위</h3>
+      <ul>
+        <li><strong>즉시</strong>: Phase 1(보안·감사 도메인) 착수 — 통합 에이전트의 신뢰성 기반</li>
+        <li><strong>3개월</strong>: Phase 2(스킬 샌드박스 강화) + Phase 5(위협 모델 문서화)</li>
+        <li><strong>6개월</strong>: Phase 3(Discord 채널 보강) + Phase 4(비용 UI)</li>
+      </ul>
+
+      <div class="edu-box section-summary">
+        <div class="edu-title">한 줄로</div>
+        "이미 완성된 운영 플랫폼 위에 검증된 보안 설계를 단방향 흡수한다" — 이것이 두 프로젝트의 비대칭적 강점을 합치는 가장 효율적인 경로입니다.
+      </div>
+    </div>
+
+  </div>
+</div>
+<button class="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', flowchart: { useMaxWidth: true } });
+
+window.addEventListener('scroll', function() {
+  document.querySelector('.scroll-top').style.display = window.scrollY > 400 ? 'flex' : 'none';
+});
+
+(function() {
+  var tocLinks = document.querySelectorAll('.sidebar-nav a[href^="#"]');
+  var sectionEls = [];
+  tocLinks.forEach(function(link) {
+    var id = link.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sectionEls.push({ id: id, el: el, link: link });
+  });
+  function updateActive() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var triggerLine = scrollY + window.innerHeight * 0.18;
+    var active = null;
+    for (var i = 0; i < sectionEls.length; i++) {
+      var top = sectionEls[i].el.getBoundingClientRect().top + scrollY;
+      if (top <= triggerLine) active = sectionEls[i];
+    }
+    tocLinks.forEach(function(l) { l.classList.remove('active'); });
+    if (active) active.link.classList.add('active');
+  }
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) { requestAnimationFrame(function() { updateActive(); ticking = false; }); ticking = true; }
+  });
+  updateActive();
+})();
+
+var fadeObs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(function(el) { fadeObs.observe(el); });
+
+document.querySelectorAll('.sidebar-nav a').forEach(function(a) {
+  a.addEventListener('click', function() {
+    if (window.innerWidth <= 768) document.querySelector('.sidebar').classList.remove('open');
+  });
+});
+
+var chartColors = ['#A8C4DC', '#A8A0C0', '#A0C8B0', '#C8B0BC', '#E85A4F'];
+var commonOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { font: { family: "'Outfit', sans-serif", size: 11 }, color: '#6B7280' } }
+  },
+  scales: {
+    y: { beginAtZero: true, grid: { color: '#EFEFEF' }, ticks: { color: '#9CA3AF', font: { size: 11 } } },
+    x: { grid: { display: false }, ticks: { color: '#6B7280', font: { size: 11 } } }
+  }
+};
+
+new Chart(document.getElementById('chartScale'), {
+  type: 'bar',
+  data: {
+    labels: ['Rust 파일', 'TS·TSX 파일', '테스트 파일', 'Python 파일(추정)'],
+    datasets: [
+      { label: 'OpenHuman', data: [1068, 615, 264, 0], backgroundColor: '#A8C4DC' },
+      { label: 'DisBot', data: [0, 0, 30, 80], backgroundColor: '#A0C8B0' }
+    ]
+  },
+  options: commonOpts
+});
+
+new Chart(document.getElementById('chartCoverage'), {
+  type: 'bar',
+  data: {
+    labels: ['메신저 채널', 'OAuth 프로바이더', '플랫폼(OS)', 'LLM 백엔드'],
+    datasets: [
+      { label: 'OpenHuman', data: [7, 118, 3, 3], backgroundColor: '#A8A0C0' },
+      { label: 'DisBot', data: [1, 0, 1, 2], backgroundColor: '#C8B0BC' }
+    ]
+  },
+  options: commonOpts
+});
+
+new Chart(document.getElementById('chartRadar'), {
+  type: 'radar',
+  data: {
+    labels: ['성숙도', '플랫폼 범위', '채널 다양성', '메모리·RAG', 'LLM 유연성', '보안 문서화', '샌드박스', '비용 추적', '테스트', 'UI/UX', '배포'],
+    datasets: [
+      { label: 'OpenHuman', data: [9, 10, 10, 9, 8, 6, 6, 7, 9, 9, 9], backgroundColor: 'rgba(168,196,220,0.25)', borderColor: '#A8C4DC', borderWidth: 2, pointBackgroundColor: '#A8C4DC' },
+      { label: 'DisBot', data: [4, 3, 4, 3, 5, 9, 9, 8, 5, 3, 3], backgroundColor: 'rgba(160,200,176,0.25)', borderColor: '#A0C8B0', borderWidth: 2, pointBackgroundColor: '#A0C8B0' }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { font: { family: "'Outfit', sans-serif", size: 12 }, color: '#6B7280' } }
+    },
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 10,
+        grid: { color: '#EFEFEF' },
+        angleLines: { color: '#EFEFEF' },
+        pointLabels: { color: '#6B7280', font: { family: "'Outfit', sans-serif", size: 11 } },
+        ticks: { display: false, stepSize: 2 }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
