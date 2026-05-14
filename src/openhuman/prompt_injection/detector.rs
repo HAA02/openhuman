@@ -28,9 +28,11 @@ pub struct PromptInjectionReason {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum PromptEnforcementAction {
     Allow,
+    #[serde(rename = "block")]
     Blocked,
     ReviewBlocked,
 }
