@@ -89,6 +89,16 @@ const CAPABILITIES: &[Capability] = &[
         privacy: LOCAL_RAW,
     },
     Capability {
+        id: "security.audit_log",
+        name: "Security Audit Log",
+        domain: "security",
+        category: CapabilityCategory::Settings,
+        description: "Read or export local JSONL security audit records for review and diagnostics.",
+        how_to: "Core RPC: openhuman.security_get_audit or openhuman.security_export_audit",
+        status: CapabilityStatus::Beta,
+        privacy: LOCAL_RAW,
+    },
+    Capability {
         id: "conversation.send_voice",
         name: "Send Voice Messages",
         domain: "conversation",

@@ -5,9 +5,9 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::path::PathBuf;
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, Write};
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
 /// Audit event types
@@ -150,6 +150,20 @@ pub struct AuditLogger {
     buffer: Mutex<Vec<AuditEvent>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditQueryResult {
+    pub records: Vec<AuditEvent>,
+    pub has_more: bool,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditExportResult {
+    pub exported: u64,
+    pub file: String,
+    pub source: String,
+}
+
 /// Structured command execution details for audit logging.
 #[derive(Debug, Clone)]
 pub struct CommandExecutionLog<'a> {
@@ -271,6 +285,85 @@ impl AuditLogger {
         std::fs::rename(&self.log_path, &rotated)?;
         Ok(())
     }
+}
+
+pub fn read_audit_events(
+    log_path: &Path,
+    since: Option<DateTime<Utc>>,
+    limit: usize,
+) -> Result<AuditQueryResult> {
+    let limit = limit.clamp(1, 1000);
+    let records = read_matching_events(log_path, since, None)?;
+    let has_more = records.len() > limit;
+    let start = records.len().saturating_sub(limit);
+
+    Ok(AuditQueryResult {
+        records: records[start..].to_vec(),
+        has_more,
+        source: log_path.display().to_string(),
+    })
+}
+
+pub fn export_audit_events(
+    log_path: &Path,
+    output_path: &Path,
+    from: Option<DateTime<Utc>>,
+    to: Option<DateTime<Utc>>,
+) -> Result<AuditExportResult> {
+    let records = read_matching_events(log_path, from, to)?;
+
+    if let Some(parent) = output_path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let mut file = File::create(output_path)?;
+    for record in &records {
+        writeln!(file, "{}", serde_json::to_string(record)?)?;
+    }
+    file.sync_all()?;
+
+    Ok(AuditExportResult {
+        exported: records.len() as u64,
+        file: output_path.display().to_string(),
+        source: log_path.display().to_string(),
+    })
+}
+
+fn read_matching_events(
+    log_path: &Path,
+    from: Option<DateTime<Utc>>,
+    to: Option<DateTime<Utc>>,
+) -> Result<Vec<AuditEvent>> {
+    if !log_path.exists() {
+        return Ok(Vec::new());
+    }
+
+    let file = File::open(log_path)?;
+    let reader = BufReader::new(file);
+    let mut records = Vec::new();
+
+    for (idx, line) in reader.lines().enumerate() {
+        let line = line?;
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let event: AuditEvent = serde_json::from_str(trimmed)
+            .map_err(|e| anyhow::anyhow!("invalid audit JSONL at line {}: {e}", idx + 1))?;
+        if let Some(ts) = from.as_ref() {
+            if event.timestamp < ts.clone() {
+                continue;
+            }
+        }
+        if let Some(ts) = to.as_ref() {
+            if event.timestamp > ts.clone() {
+                continue;
+            }
+        }
+        records.push(event);
+    }
+
+    Ok(records)
 }
 
 #[cfg(test)]
@@ -433,6 +526,56 @@ mod tests {
             std::path::Path::new(&rotated).exists(),
             "rotation must create .1.log backup"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn read_audit_events_returns_latest_limited_records() -> Result<()> {
+        let tmp = TempDir::new()?;
+        let log_path = tmp.path().join("audit.log");
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)?;
+        for command in ["one", "two", "three"] {
+            let event = AuditEvent::new(AuditEventType::CommandExecution).with_action(
+                command.to_string(),
+                "low".to_string(),
+                false,
+                true,
+            );
+            writeln!(file, "{}", serde_json::to_string(&event)?)?;
+        }
+
+        let result = read_audit_events(&log_path, None, 2)?;
+
+        assert!(result.has_more);
+        assert_eq!(result.records.len(), 2);
+        assert_eq!(
+            result.records[0].action.as_ref().unwrap().command.as_deref(),
+            Some("two")
+        );
+        assert_eq!(
+            result.records[1].action.as_ref().unwrap().command.as_deref(),
+            Some("three")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn export_audit_events_writes_filtered_jsonl() -> Result<()> {
+        let tmp = TempDir::new()?;
+        let log_path = tmp.path().join("audit.log");
+        let output_path = tmp.path().join("exports").join("audit.jsonl");
+        let event = AuditEvent::new(AuditEventType::SecurityEvent);
+        std::fs::write(&log_path, format!("{}\n", serde_json::to_string(&event)?))?;
+
+        let result = export_audit_events(&log_path, &output_path, None, None)?;
+
+        assert_eq!(result.exported, 1);
+        let exported = std::fs::read_to_string(output_path)?;
+        let parsed: AuditEvent = serde_json::from_str(exported.trim())?;
+        assert_eq!(parsed.event_id, event.event_id);
         Ok(())
     }
 }

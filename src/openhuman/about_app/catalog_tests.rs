@@ -76,6 +76,7 @@ fn catalog_includes_additional_user_facing_surfaces() {
         "skills.connect_google",
         "auth.backup_recovery_phrase",
         "auth.configure_tool_access",
+        "security.audit_log",
         "security.scan_input",
         "settings.manage_service",
         "settings.clear_app_data",

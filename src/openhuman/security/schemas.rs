@@ -5,7 +5,12 @@ use crate::core::{ControllerSchema, FieldSchema, TypeSchema};
 use crate::rpc::RpcOutcome;
 
 pub fn all_controller_schemas() -> Vec<ControllerSchema> {
-    vec![schemas("policy_info"), schemas("scan_input")]
+    vec![
+        schemas("policy_info"),
+        schemas("scan_input"),
+        schemas("get_audit"),
+        schemas("export_audit"),
+    ]
 }
 
 pub fn all_registered_controllers() -> Vec<RegisteredController> {
@@ -17,6 +22,14 @@ pub fn all_registered_controllers() -> Vec<RegisteredController> {
         RegisteredController {
             schema: schemas("scan_input"),
             handler: handle_scan_input,
+        },
+        RegisteredController {
+            schema: schemas("get_audit"),
+            handler: handle_get_audit,
+        },
+        RegisteredController {
+            schema: schemas("export_audit"),
+            handler: handle_export_audit,
         },
     ]
 }
@@ -88,6 +101,90 @@ pub fn schemas(function: &str) -> ControllerSchema {
                 },
             ],
         },
+        "get_audit" => ControllerSchema {
+            namespace: "security",
+            function: "get_audit",
+            description: "Read recent security audit JSONL records from the active OpenHuman data directory.",
+            inputs: vec![
+                FieldSchema {
+                    name: "since",
+                    ty: TypeSchema::String,
+                    comment: "Optional RFC3339 lower-bound timestamp.",
+                    required: false,
+                },
+                FieldSchema {
+                    name: "limit",
+                    ty: TypeSchema::U64,
+                    comment: "Optional maximum number of records to return, clamped to 1..1000.",
+                    required: false,
+                },
+            ],
+            outputs: vec![
+                FieldSchema {
+                    name: "records",
+                    ty: TypeSchema::Array(Box::new(TypeSchema::Json)),
+                    comment: "Latest matching audit records in append order.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "has_more",
+                    ty: TypeSchema::Bool,
+                    comment: "True when more matching records exist before the returned window.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "source",
+                    ty: TypeSchema::String,
+                    comment: "Resolved audit log path used for the query.",
+                    required: true,
+                },
+            ],
+        },
+        "export_audit" => ControllerSchema {
+            namespace: "security",
+            function: "export_audit",
+            description: "Export filtered security audit records to a JSONL file.",
+            inputs: vec![
+                FieldSchema {
+                    name: "path",
+                    ty: TypeSchema::String,
+                    comment: "Output JSONL file path.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "from",
+                    ty: TypeSchema::String,
+                    comment: "Optional RFC3339 inclusive lower-bound timestamp.",
+                    required: false,
+                },
+                FieldSchema {
+                    name: "to",
+                    ty: TypeSchema::String,
+                    comment: "Optional RFC3339 inclusive upper-bound timestamp.",
+                    required: false,
+                },
+            ],
+            outputs: vec![
+                FieldSchema {
+                    name: "exported",
+                    ty: TypeSchema::U64,
+                    comment: "Number of audit records written.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "file",
+                    ty: TypeSchema::String,
+                    comment: "Output JSONL file path.",
+                    required: true,
+                },
+                FieldSchema {
+                    name: "source",
+                    ty: TypeSchema::String,
+                    comment: "Resolved audit log path used as export source.",
+                    required: true,
+                },
+            ],
+        },
         _ => ControllerSchema {
             namespace: "security",
             function: "unknown",
@@ -112,6 +209,58 @@ fn handle_scan_input(params: Map<String, Value>) -> ControllerFuture {
     })
 }
 
+fn handle_get_audit(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let since = optional_string(&params, "since")?;
+        let limit = optional_u64(&params, "limit")?.map(|value| value as usize);
+        to_json(crate::openhuman::security::rpc::security_get_audit(
+            since.as_deref(),
+            limit,
+        )
+        .await?)
+    })
+}
+
+fn handle_export_audit(params: Map<String, Value>) -> ControllerFuture {
+    Box::pin(async move {
+        let path = params
+            .get("path")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "security.export_audit requires string param `path`".to_string())?;
+        let from = optional_string(&params, "from")?;
+        let to = optional_string(&params, "to")?;
+        to_json(crate::openhuman::security::rpc::security_export_audit(
+            path,
+            from.as_deref(),
+            to.as_deref(),
+        )
+        .await?)
+    })
+}
+
 fn to_json<T: serde::Serialize>(outcome: RpcOutcome<T>) -> Result<Value, String> {
     outcome.into_cli_compatible_json()
+}
+
+fn optional_string(params: &Map<String, Value>, key: &str) -> Result<Option<String>, String> {
+    params
+        .get(key)
+        .map(|value| {
+            value
+                .as_str()
+                .map(ToString::to_string)
+                .ok_or_else(|| format!("security audit param `{key}` must be a string"))
+        })
+        .transpose()
+}
+
+fn optional_u64(params: &Map<String, Value>, key: &str) -> Result<Option<u64>, String> {
+    params
+        .get(key)
+        .map(|value| {
+            value
+                .as_u64()
+                .ok_or_else(|| format!("security audit param `{key}` must be a positive integer"))
+        })
+        .transpose()
 }

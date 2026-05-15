@@ -216,6 +216,21 @@ fn schema_for_rpc_method_finds_security_scan_input() {
 }
 
 #[test]
+fn schema_for_rpc_method_finds_security_audit_methods() {
+    let get_schema = schema_for_rpc_method("openhuman.security_get_audit")
+        .expect("security.get_audit should be findable");
+    assert_eq!(get_schema.namespace, "security");
+    assert_eq!(get_schema.function, "get_audit");
+    assert!(get_schema.outputs.iter().any(|field| field.name == "records"));
+
+    let export_schema = schema_for_rpc_method("openhuman.security_export_audit")
+        .expect("security.export_audit should be findable");
+    assert_eq!(export_schema.namespace, "security");
+    assert_eq!(export_schema.function, "export_audit");
+    assert!(export_schema.inputs.iter().any(|field| field.name == "path" && field.required));
+}
+
+#[test]
 fn schema_for_rpc_method_returns_none_for_unknown() {
     assert!(schema_for_rpc_method("openhuman.nonexistent_method_xyz").is_none());
 }

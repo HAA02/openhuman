@@ -16,6 +16,7 @@ Trust boundary for the autonomous core. Owns the autonomy / risk policy, sandbox
 - `pub fn redact(value: &str) -> String` — `core.rs:3` — uniform 4-char-prefix redaction for logs.
 - `pub fn security_policy_info() -> RpcOutcome<serde_json::Value>` — `ops.rs` — RPC handler used by the doctor / settings UI.
 - `pub fn security_scan_input(text: &str) -> RpcOutcome<serde_json::Value>` — `ops.rs` — RPC handler that reuses the authoritative prompt-injection guard and returns verdict, score, reasons, enforcement action, and prompt hash metadata.
+- `pub fn security_get_audit(...)` / `pub fn security_export_audit(...)` — `ops.rs` — RPC handlers for local JSONL audit review and export.
 
 ## Calls into
 
