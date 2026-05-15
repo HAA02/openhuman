@@ -15,6 +15,7 @@ Trust boundary for the autonomous core. Owns the autonomy / risk policy, sandbox
 - `pub struct PairingGuard` / `pub fn constant_time_eq` / `pub fn is_public_bind` — `pairing.rs` — pairing-token check before binding the RPC server publicly.
 - `pub fn redact(value: &str) -> String` — `core.rs:3` — uniform 4-char-prefix redaction for logs.
 - `pub fn security_policy_info() -> RpcOutcome<serde_json::Value>` — `ops.rs` — RPC handler used by the doctor / settings UI.
+- `pub fn security_scan_input(text: &str) -> RpcOutcome<serde_json::Value>` — `ops.rs` — RPC handler that reuses the authoritative prompt-injection guard and returns verdict, score, reasons, enforcement action, and prompt hash metadata.
 
 ## Calls into
 
@@ -33,6 +34,6 @@ Trust boundary for the autonomous core. Owns the autonomy / risk policy, sandbox
 
 ## Tests
 
-- Unit: `pairing_tests.rs`, `policy_tests.rs`, `secrets_tests.rs`.
+- Unit: `pairing_tests.rs`, `policy_tests.rs`, `secrets_tests.rs`, plus `ops.rs` coverage for policy metadata and prompt-injection scan output.
 - `core.rs` `#[cfg(test)] mod tests` — round-trips `SecretStore` encrypt/decrypt, `redact()` cases, `PairingGuard` defaults.
 - Sandbox-backend smoke: each backend file has its own `#[cfg(test)]` blocks where the binary is available.

@@ -79,6 +79,16 @@ const CAPABILITIES: &[Capability] = &[
         privacy: DERIVED_TO_BACKEND,
     },
     Capability {
+        id: "security.scan_input",
+        name: "Security Input Scan",
+        domain: "security",
+        category: CapabilityCategory::Settings,
+        description: "Run the core prompt-injection guard against text before it enters agent or LLM context.",
+        how_to: "Core RPC: openhuman.security_scan_input",
+        status: CapabilityStatus::Stable,
+        privacy: LOCAL_RAW,
+    },
+    Capability {
         id: "conversation.send_voice",
         name: "Send Voice Messages",
         domain: "conversation",
