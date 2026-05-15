@@ -7,15 +7,17 @@
 use chrono::Utc;
 
 use crate::openhuman::agent::Agent;
-use crate::openhuman::config::Config;
+use crate::openhuman::config::{AuditConfig, Config};
 use crate::openhuman::local_ai::{
     self, LocalAiAssetsStatus, LocalAiDownloadsProgress, LocalAiEmbeddingResult,
     LocalAiSpeechResult, LocalAiTtsResult,
 };
 use crate::openhuman::prompt_injection::{
     enforce_prompt_input, PromptEnforcementAction, PromptEnforcementContext,
+    PromptEnforcementDecision,
 };
 use crate::openhuman::providers::{self, ProviderRuntimeOptions};
+use crate::openhuman::security::{AuditEvent, AuditEventType, AuditLogger};
 use crate::rpc::RpcOutcome;
 
 fn prompt_guard_user_message(action: PromptEnforcementAction) -> &'static str {
@@ -30,7 +32,55 @@ fn prompt_guard_user_message(action: PromptEnforcementAction) -> &'static str {
     }
 }
 
-fn enforce_user_prompt_or_reject(prompt: &str, source: &'static str) -> Result<(), String> {
+fn audit_model_event(
+    config: &Config,
+    operation: &'static str,
+    phase: &'static str,
+    decision: &PromptEnforcementDecision,
+    success: bool,
+    duration_ms: u64,
+    error: Option<String>,
+) {
+    let Some(openhuman_dir) = config.config_path.parent().map(std::path::PathBuf::from) else {
+        log::warn!("[local_ai:audit] skipped audit event: config_path has no parent");
+        return;
+    };
+    let logger = match AuditLogger::new(AuditConfig::default(), openhuman_dir) {
+        Ok(logger) => logger,
+        Err(err) => {
+            log::warn!("[local_ai:audit] failed to initialize audit logger: {err}");
+            return;
+        }
+    };
+
+    let allowed = matches!(decision.action, PromptEnforcementAction::Allow);
+    let sanitized_error = error.map(|err| providers::sanitize_api_error(&err));
+    let event = AuditEvent::new(AuditEventType::SecurityEvent)
+        .with_actor("local_ai".to_string(), None, None)
+        .with_action(
+            format!(
+                "operation={operation} phase={phase} prompt_hash={} prompt_chars={}",
+                decision.prompt_hash, decision.prompt_chars
+            ),
+            format!("{:?}", decision.verdict).to_ascii_lowercase(),
+            false,
+            allowed,
+        )
+        .with_result(success, None, duration_ms, sanitized_error);
+
+    if let Err(err) = logger.log(&event) {
+        log::warn!(
+            "[local_ai:audit] failed to write audit event operation={operation} phase={phase}: {err}"
+        );
+    }
+}
+
+fn enforce_user_prompt_or_reject_with_audit(
+    config: &Config,
+    prompt: &str,
+    source: &'static str,
+    operation: &'static str,
+) -> Result<PromptEnforcementDecision, String> {
     let decision = enforce_prompt_input(
         prompt,
         PromptEnforcementContext {
@@ -40,11 +90,25 @@ fn enforce_user_prompt_or_reject(prompt: &str, source: &'static str) -> Result<(
             session_id: Some("local_ai"),
         },
     );
-    match decision.action {
-        PromptEnforcementAction::Allow => Ok(()),
-        PromptEnforcementAction::Blocked | PromptEnforcementAction::ReviewBlocked => {
-            Err(prompt_guard_user_message(decision.action).to_string())
-        }
+    let allowed = matches!(decision.action, PromptEnforcementAction::Allow);
+    audit_model_event(
+        config,
+        operation,
+        "pre",
+        &decision,
+        allowed,
+        0,
+        if allowed {
+            None
+        } else {
+            Some(prompt_guard_user_message(decision.action).to_string())
+        },
+    );
+
+    if allowed {
+        Ok(decision)
+    } else {
+        Err(prompt_guard_user_message(decision.action).to_string())
     }
 }
 
@@ -65,7 +129,13 @@ pub async fn agent_chat(
     model_override: Option<String>,
     temperature: Option<f64>,
 ) -> Result<RpcOutcome<String>, String> {
-    enforce_user_prompt_or_reject(message, "local_ai.ops.agent_chat")?;
+    let decision = enforce_user_prompt_or_reject_with_audit(
+        config,
+        message,
+        "local_ai.ops.agent_chat",
+        "agent_chat",
+    )?;
+    let started = std::time::Instant::now();
 
     if let Some(model) = model_override {
         config.default_model = Some(model);
@@ -74,7 +144,30 @@ pub async fn agent_chat(
         config.default_temperature = temp;
     }
     let mut agent = Agent::from_config(config).map_err(|e| e.to_string())?;
-    let response = agent.run_single(message).await.map_err(|e| e.to_string())?;
+    let response = match agent.run_single(message).await.map_err(|e| e.to_string()) {
+        Ok(response) => response,
+        Err(err) => {
+            audit_model_event(
+                config,
+                "agent_chat",
+                "post",
+                &decision,
+                false,
+                started.elapsed().as_millis() as u64,
+                Some(err.clone()),
+            );
+            return Err(err);
+        }
+    };
+    audit_model_event(
+        config,
+        "agent_chat",
+        "post",
+        &decision,
+        true,
+        started.elapsed().as_millis() as u64,
+        None,
+    );
     Ok(RpcOutcome::single_log(response, "agent chat completed"))
 }
 
@@ -85,8 +178,6 @@ pub async fn agent_chat_simple(
     model_override: Option<String>,
     temperature: Option<f64>,
 ) -> Result<RpcOutcome<String>, String> {
-    enforce_user_prompt_or_reject(message, "local_ai.ops.agent_chat_simple")?;
-
     let mut effective = config.clone();
     if let Some(model) = model_override {
         effective.default_model = Some(model);
@@ -94,6 +185,13 @@ pub async fn agent_chat_simple(
     if let Some(temp) = temperature {
         effective.default_temperature = temp;
     }
+    let decision = enforce_user_prompt_or_reject_with_audit(
+        &effective,
+        message,
+        "local_ai.ops.agent_chat_simple",
+        "agent_chat_simple",
+    )?;
+    let started = std::time::Instant::now();
 
     let default_model = effective
         .default_model
@@ -117,7 +215,7 @@ pub async fn agent_chat_simple(
     )
     .map_err(|e| e.to_string())?;
 
-    let response = provider
+    let response = match provider
         .chat_with_system(
             None,
             message,
@@ -125,7 +223,31 @@ pub async fn agent_chat_simple(
             effective.default_temperature,
         )
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())
+    {
+        Ok(response) => response,
+        Err(err) => {
+            audit_model_event(
+                &effective,
+                "agent_chat_simple",
+                "post",
+                &decision,
+                false,
+                started.elapsed().as_millis() as u64,
+                Some(err.clone()),
+            );
+            return Err(err);
+        }
+    };
+    audit_model_event(
+        &effective,
+        "agent_chat_simple",
+        "post",
+        &decision,
+        true,
+        started.elapsed().as_millis() as u64,
+        None,
+    );
 
     Ok(RpcOutcome::single_log(
         response,
@@ -206,17 +328,47 @@ pub async fn local_ai_summarize(
     text: &str,
     max_tokens: Option<u32>,
 ) -> Result<RpcOutcome<String>, String> {
-    enforce_user_prompt_or_reject(text.trim(), "local_ai.ops.local_ai_summarize")?;
+    let decision = enforce_user_prompt_or_reject_with_audit(
+        config,
+        text.trim(),
+        "local_ai.ops.local_ai_summarize",
+        "local_ai_summarize",
+    )?;
+    let started = std::time::Instant::now();
 
     let service = local_ai::global(config);
     let status = service.status();
     if !matches!(status.state.as_str(), "ready") {
         service.bootstrap(config).await;
     }
-    let summary = service
+    let summary = match service
         .summarize(config, text, max_tokens)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())
+    {
+        Ok(summary) => summary,
+        Err(err) => {
+            audit_model_event(
+                config,
+                "local_ai_summarize",
+                "post",
+                &decision,
+                false,
+                started.elapsed().as_millis() as u64,
+                Some(err.clone()),
+            );
+            return Err(err);
+        }
+    };
+    audit_model_event(
+        config,
+        "local_ai_summarize",
+        "post",
+        &decision,
+        true,
+        started.elapsed().as_millis() as u64,
+        None,
+    );
     Ok(RpcOutcome::single_log(
         summary,
         "local ai summarize completed",
@@ -230,17 +382,47 @@ pub async fn local_ai_prompt(
     max_tokens: Option<u32>,
     no_think: Option<bool>,
 ) -> Result<RpcOutcome<String>, String> {
-    enforce_user_prompt_or_reject(prompt.trim(), "local_ai.ops.local_ai_prompt")?;
+    let decision = enforce_user_prompt_or_reject_with_audit(
+        config,
+        prompt.trim(),
+        "local_ai.ops.local_ai_prompt",
+        "local_ai_prompt",
+    )?;
+    let started = std::time::Instant::now();
 
     let service = local_ai::global(config);
     let status = service.status();
     if !matches!(status.state.as_str(), "ready") {
         service.bootstrap(config).await;
     }
-    let output = service
+    let output = match service
         .prompt(config, prompt.trim(), max_tokens, no_think.unwrap_or(true))
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())
+    {
+        Ok(output) => output,
+        Err(err) => {
+            audit_model_event(
+                config,
+                "local_ai_prompt",
+                "post",
+                &decision,
+                false,
+                started.elapsed().as_millis() as u64,
+                Some(err.clone()),
+            );
+            return Err(err);
+        }
+    };
+    audit_model_event(
+        config,
+        "local_ai_prompt",
+        "post",
+        &decision,
+        true,
+        started.elapsed().as_millis() as u64,
+        None,
+    );
     Ok(RpcOutcome::single_log(output, "local ai prompt completed"))
 }
 
@@ -251,13 +433,43 @@ pub async fn local_ai_vision_prompt(
     image_refs: &[String],
     max_tokens: Option<u32>,
 ) -> Result<RpcOutcome<String>, String> {
-    enforce_user_prompt_or_reject(prompt.trim(), "local_ai.ops.local_ai_vision_prompt")?;
+    let decision = enforce_user_prompt_or_reject_with_audit(
+        config,
+        prompt.trim(),
+        "local_ai.ops.local_ai_vision_prompt",
+        "local_ai_vision_prompt",
+    )?;
+    let started = std::time::Instant::now();
 
     let service = local_ai::global(config);
-    let output = service
+    let output = match service
         .vision_prompt(config, prompt.trim(), image_refs, max_tokens)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())
+    {
+        Ok(output) => output,
+        Err(err) => {
+            audit_model_event(
+                config,
+                "local_ai_vision_prompt",
+                "post",
+                &decision,
+                false,
+                started.elapsed().as_millis() as u64,
+                Some(err.clone()),
+            );
+            return Err(err);
+        }
+    };
+    audit_model_event(
+        config,
+        "local_ai_vision_prompt",
+        "post",
+        &decision,
+        true,
+        started.elapsed().as_millis() as u64,
+        None,
+    );
     Ok(RpcOutcome::single_log(
         output,
         "local ai vision prompt completed",
@@ -425,6 +637,7 @@ pub async fn local_ai_chat(
         return Err("messages must not be empty".to_string());
     }
 
+    let mut first_user_decision = None;
     let mut ollama_messages: Vec<crate::openhuman::local_ai::ollama_api::OllamaChatMessage> =
         Vec::with_capacity(messages.len());
 
@@ -432,7 +645,15 @@ pub async fn local_ai_chat(
         let normalized_role = msg.role.trim().to_ascii_lowercase();
         match normalized_role.as_str() {
             "user" => {
-                enforce_user_prompt_or_reject(msg.content.as_str(), "local_ai.ops.local_ai_chat")?;
+                let decision = enforce_user_prompt_or_reject_with_audit(
+                    config,
+                    msg.content.as_str(),
+                    "local_ai.ops.local_ai_chat",
+                    "local_ai_chat",
+                )?;
+                if first_user_decision.is_none() {
+                    first_user_decision = Some(decision);
+                }
             }
             "system" | "assistant" => {}
             _ => {
@@ -449,10 +670,46 @@ pub async fn local_ai_chat(
         });
     }
 
+    let decision = first_user_decision.unwrap_or_else(|| {
+        enforce_prompt_input(
+            "",
+            PromptEnforcementContext {
+                source: "local_ai.ops.local_ai_chat",
+                request_id: None,
+                user_id: None,
+                session_id: Some("local_ai"),
+            },
+        )
+    });
+    let started = std::time::Instant::now();
     let service = local_ai::global(config);
-    let reply = service
+    let reply = match service
         .chat_with_history(config, ollama_messages, max_tokens)
-        .await?;
+        .await
+    {
+        Ok(reply) => reply,
+        Err(err) => {
+            audit_model_event(
+                config,
+                "local_ai_chat",
+                "post",
+                &decision,
+                false,
+                started.elapsed().as_millis() as u64,
+                Some(err.clone()),
+            );
+            return Err(err);
+        }
+    };
+    audit_model_event(
+        config,
+        "local_ai_chat",
+        "post",
+        &decision,
+        true,
+        started.elapsed().as_millis() as u64,
+        None,
+    );
 
     tracing::debug!(
         reply_len = reply.len(),

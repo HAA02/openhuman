@@ -31,6 +31,7 @@ Trust boundary for the autonomous core. Owns the autonomy / risk policy, sandbox
 - `src/openhuman/tools/impl/network/{curl,http_request,composio}.rs` — risk-classify outbound calls.
 - `src/openhuman/tools/impl/memory/{store,forget}.rs` — sensitive-write tracking.
 - `src/openhuman/tools/impl/agent/delegate.rs` — sub-agent dispatch goes through autonomy gate.
+- `src/openhuman/local_ai/ops.rs` — records pre/post audit events for prompt-bearing local/model chat calls without logging raw prompts.
 - `src/openhuman/credentials/` — uses `SecretStore` and `redact`.
 
 ## Tests
