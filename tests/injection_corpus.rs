@@ -58,7 +58,7 @@ fn scan(text: &str) -> PromptEnforcementAction {
 fn is_block(action: PromptEnforcementAction) -> bool {
     matches!(
         action,
-        PromptEnforcementAction::Block | PromptEnforcementAction::ReviewBlocked
+        PromptEnforcementAction::Blocked | PromptEnforcementAction::ReviewBlocked
     )
 }
 
