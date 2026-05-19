@@ -5,16 +5,19 @@ use crate::core::{ControllerSchema, FieldSchema, TypeSchema};
 use crate::rpc::RpcOutcome;
 
 pub fn all_controller_schemas() -> Vec<ControllerSchema> {
-    vec![
+    let mut out = vec![
         schemas("policy_info"),
         schemas("scan_input"),
         schemas("get_audit"),
         schemas("export_audit"),
-    ]
+    ];
+    out.extend(crate::openhuman::security::cost_guard::ops::cost_guard_schemas());
+    out.extend(crate::openhuman::security::permissions::ops::permissions_schemas());
+    out
 }
 
 pub fn all_registered_controllers() -> Vec<RegisteredController> {
-    vec![
+    let mut out = vec![
         RegisteredController {
             schema: schemas("policy_info"),
             handler: handle_policy_info,
@@ -31,7 +34,10 @@ pub fn all_registered_controllers() -> Vec<RegisteredController> {
             schema: schemas("export_audit"),
             handler: handle_export_audit,
         },
-    ]
+    ];
+    out.extend(crate::openhuman::security::cost_guard::ops::cost_guard_registered_controllers());
+    out.extend(crate::openhuman::security::permissions::ops::permissions_registered_controllers());
+    out
 }
 
 pub fn schemas(function: &str) -> ControllerSchema {

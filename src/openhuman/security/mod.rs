@@ -4,7 +4,10 @@ mod schemas;
 
 pub mod audit;
 pub mod bubblewrap;
+pub mod cost_guard;
 pub mod detect;
+pub mod permissions;
+pub mod redact;
 pub mod docker;
 pub mod firejail;
 pub mod landlock;
