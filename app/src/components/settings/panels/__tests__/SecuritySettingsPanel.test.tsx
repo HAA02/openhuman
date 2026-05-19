@@ -3,13 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import SecuritySettingsPanel from '../SecuritySettingsPanel';
 
-const { mockCallCoreRpc } = vi.hoisted(() => ({
-  mockCallCoreRpc: vi.fn(),
-}));
+const { mockCallCoreRpc } = vi.hoisted(() => ({ mockCallCoreRpc: vi.fn() }));
 
-vi.mock('../../../../services/coreRpcClient', () => ({
-  callCoreRpc: mockCallCoreRpc,
-}));
+vi.mock('../../../../services/coreRpcClient', () => ({ callCoreRpc: mockCallCoreRpc }));
 
 function usageResponse(scope: 'daily' | 'weekly' | 'monthly', used_usd: number, limit_usd: number) {
   return {

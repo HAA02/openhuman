@@ -74,12 +74,12 @@ export default function PermissionDialog({
       role="dialog"
       aria-modal="true"
       aria-label={`${skillName} 권한 요청`}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 p-4"
-    >
+      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 p-4">
       <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
         <h2 className="mb-1 text-lg font-semibold text-stone-900">권한 요청</h2>
         <p className="mb-4 text-sm text-stone-600">
-          스킬 <strong data-testid="permission-dialog-skill">{skillName}</strong> 가 다음 권한을 요청합니다.
+          스킬 <strong data-testid="permission-dialog-skill">{skillName}</strong> 가 다음 권한을
+          요청합니다.
         </p>
 
         <ul className="mb-4 space-y-2" data-testid="permission-dialog-list">
@@ -107,16 +107,14 @@ export default function PermissionDialog({
             type="button"
             onClick={onDeny}
             data-testid="permission-dialog-deny"
-            className="rounded-md border border-stone-300 px-3 py-1 text-sm text-stone-700 hover:bg-stone-50"
-          >
+            className="rounded-md border border-stone-300 px-3 py-1 text-sm text-stone-700 hover:bg-stone-50">
             거부
           </button>
           <button
             type="button"
             onClick={handleGrant}
             data-testid="permission-dialog-grant"
-            className="rounded-md bg-ocean-600 px-3 py-1 text-sm font-medium text-white hover:bg-ocean-700"
-          >
+            className="rounded-md bg-ocean-600 px-3 py-1 text-sm font-medium text-white hover:bg-ocean-700">
             허용 ({selected.size})
           </button>
         </div>

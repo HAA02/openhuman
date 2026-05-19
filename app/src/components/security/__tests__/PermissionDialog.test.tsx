@@ -15,7 +15,7 @@ describe('PermissionDialog', () => {
         requested={allRequested}
         onGrant={vi.fn()}
         onDeny={vi.fn()}
-      />,
+      />
     );
     expect(container.firstChild).toBeNull();
   });
@@ -28,7 +28,7 @@ describe('PermissionDialog', () => {
         requested={allRequested}
         onGrant={vi.fn()}
         onDeny={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByTestId('permission-dialog-skill').textContent).toBe('my-skill');
     expect(screen.getAllByRole('checkbox')).toHaveLength(allRequested.length);
@@ -42,7 +42,7 @@ describe('PermissionDialog', () => {
         requested={allRequested}
         onGrant={vi.fn()}
         onDeny={vi.fn()}
-      />,
+      />
     );
     for (const permission of allRequested) {
       const box = screen.getByTestId(`permission-dialog-check-${permission}`) as HTMLInputElement;
@@ -61,7 +61,7 @@ describe('PermissionDialog', () => {
         requested={allRequested}
         onGrant={onGrant}
         onDeny={vi.fn()}
-      />,
+      />
     );
     await user.click(screen.getByTestId('permission-dialog-check-network'));
     await user.click(screen.getByTestId('permission-dialog-grant'));
@@ -83,7 +83,7 @@ describe('PermissionDialog', () => {
         requested={allRequested}
         onGrant={onGrant}
         onDeny={onDeny}
-      />,
+      />
     );
     await user.click(screen.getByTestId('permission-dialog-deny'));
     expect(onDeny).toHaveBeenCalledTimes(1);
@@ -98,7 +98,7 @@ describe('PermissionDialog', () => {
         requested={['file_read']}
         onGrant={vi.fn()}
         onDeny={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByTestId('permission-dialog-grant').textContent).toContain('(1)');
     rerender(
@@ -108,7 +108,7 @@ describe('PermissionDialog', () => {
         requested={['file_read', 'network', 'system_info']}
         onGrant={vi.fn()}
         onDeny={vi.fn()}
-      />,
+      />
     );
     expect(screen.getByTestId('permission-dialog-grant').textContent).toContain('(3)');
   });
@@ -121,7 +121,7 @@ describe('PermissionDialog', () => {
         requested={['file_read']}
         onGrant={vi.fn()}
         onDeny={vi.fn()}
-      />,
+      />
     );
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');

@@ -51,10 +51,7 @@ function statusLabel(usage: UsagePayload): string {
  * `SecuritySettingsPanel`. Color thresholds match the PRD warning rule
  * (≥ 80% = warning, ≥ 100% = breach).
  */
-export default function BudgetGauge({
-  scope,
-  refreshIntervalMs = 30_000,
-}: BudgetGaugeProps) {
+export default function BudgetGauge({ scope, refreshIntervalMs = 30_000 }: BudgetGaugeProps) {
   const [usage, setUsage] = useState<UsagePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,8 +95,7 @@ export default function BudgetGauge({
       <div
         data-testid="budget-gauge-error"
         role="alert"
-        className="rounded-md border border-coral-200 bg-coral-50 p-4 text-sm text-coral-700"
-      >
+        className="rounded-md border border-coral-200 bg-coral-50 p-4 text-sm text-coral-700">
         예산 정보를 불러오지 못했습니다: {error}
       </div>
     );
@@ -115,14 +111,10 @@ export default function BudgetGauge({
       data-testid={`budget-gauge-${scope}`}
       data-scope={scope}
       aria-label={`${SCOPE_LABEL[scope]} 예산 게이지`}
-      className="rounded-md border border-stone-200 bg-white p-4"
-    >
+      className="rounded-md border border-stone-200 bg-white p-4">
       <header className="mb-2 flex items-baseline justify-between">
         <h3 className="text-sm font-medium text-stone-700">{SCOPE_LABEL[scope]} 예산</h3>
-        <span
-          data-testid={`budget-gauge-${scope}-status`}
-          className="text-xs text-stone-500"
-        >
+        <span data-testid={`budget-gauge-${scope}-status`} className="text-xs text-stone-500">
           {status}
         </span>
       </header>
@@ -138,8 +130,7 @@ export default function BudgetGauge({
         aria-valuemax={100}
         aria-valuenow={Math.round(clampedPercent)}
         aria-label={`${SCOPE_LABEL[scope]} 사용률 ${clampedPercent.toFixed(0)}%`}
-        className="h-2 w-full overflow-hidden rounded-full bg-stone-100"
-      >
+        className="h-2 w-full overflow-hidden rounded-full bg-stone-100">
         <div
           data-testid={`budget-gauge-${scope}-fill`}
           className={`h-full transition-[width] duration-300 ${gaugeColorClass(usage.percent)}`}

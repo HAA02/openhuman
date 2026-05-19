@@ -90,8 +90,7 @@ export default function AuditView({ limit = 50 }: AuditViewProps) {
           onClick={() => void fetchAudit()}
           disabled={loading}
           data-testid="audit-view-refresh"
-          className="rounded-md bg-ocean-600 px-3 py-1 text-sm font-medium text-white hover:bg-ocean-700 disabled:opacity-50"
-        >
+          className="rounded-md bg-ocean-600 px-3 py-1 text-sm font-medium text-white hover:bg-ocean-700 disabled:opacity-50">
           {loading ? '불러오는 중…' : '새로 고침'}
         </button>
         {source && (
@@ -133,9 +132,10 @@ export default function AuditView({ limit = 50 }: AuditViewProps) {
                 <tr
                   key={key}
                   data-testid="audit-view-row"
-                  className="border-t border-stone-100 align-top"
-                >
-                  <td className="py-1 pr-3 font-mono text-xs">{formatTimestamp(record.timestamp)}</td>
+                  className="border-t border-stone-100 align-top">
+                  <td className="py-1 pr-3 font-mono text-xs">
+                    {formatTimestamp(record.timestamp)}
+                  </td>
                   <td className="py-1 pr-3">{record.kind ?? '—'}</td>
                   <td className="py-1 pr-3">{record.status ?? '—'}</td>
                   <td className="py-1 pr-3">{record.channel ?? '—'}</td>

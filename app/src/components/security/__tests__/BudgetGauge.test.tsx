@@ -3,19 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import BudgetGauge from '../BudgetGauge';
 
-const { mockCallCoreRpc } = vi.hoisted(() => ({
-  mockCallCoreRpc: vi.fn(),
-}));
+const { mockCallCoreRpc } = vi.hoisted(() => ({ mockCallCoreRpc: vi.fn() }));
 
-vi.mock('../../../services/coreRpcClient', () => ({
-  callCoreRpc: mockCallCoreRpc,
-}));
+vi.mock('../../../services/coreRpcClient', () => ({ callCoreRpc: mockCallCoreRpc }));
 
-const sample = (overrides: Partial<{
-  used_usd: number;
-  limit_usd: number;
-  percent: number;
-}> = {}) => ({
+const sample = (
+  overrides: Partial<{ used_usd: number; limit_usd: number; percent: number }> = {}
+) => ({
   scope: 'daily' as const,
   used_usd: overrides.used_usd ?? 0.4,
   limit_usd: overrides.limit_usd ?? 1.0,

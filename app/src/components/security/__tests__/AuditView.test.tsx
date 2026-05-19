@@ -4,27 +4,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AuditView from '../AuditView';
 
-const { mockCallCoreRpc } = vi.hoisted(() => ({
-  mockCallCoreRpc: vi.fn(),
-}));
+const { mockCallCoreRpc } = vi.hoisted(() => ({ mockCallCoreRpc: vi.fn() }));
 
-vi.mock('../../../services/coreRpcClient', () => ({
-  callCoreRpc: mockCallCoreRpc,
-}));
+vi.mock('../../../services/coreRpcClient', () => ({ callCoreRpc: mockCallCoreRpc }));
 
-const samplePayload = (overrides: Partial<{ records: object[]; has_more: boolean; source: string }> = {}) => ({
-  records:
-    overrides.records ??
-    [
-      {
-        timestamp: '2026-05-19T03:24:00+00:00',
-        kind: 'LlmCallPost',
-        status: 'Success',
-        channel: 'chat',
-        cost_usd: 0.0123,
-        model: 'claude-sonnet-4-6',
-      },
-    ],
+const samplePayload = (
+  overrides: Partial<{ records: object[]; has_more: boolean; source: string }> = {}
+) => ({
+  records: overrides.records ?? [
+    {
+      timestamp: '2026-05-19T03:24:00+00:00',
+      kind: 'LlmCallPost',
+      status: 'Success',
+      channel: 'chat',
+      cost_usd: 0.0123,
+      model: 'claude-sonnet-4-6',
+    },
+  ],
   has_more: overrides.has_more ?? false,
   source: overrides.source ?? '/home/user/.openhuman/audit.log',
 });
@@ -69,10 +65,7 @@ describe('AuditView', () => {
     await waitFor(() => {
       expect(mockCallCoreRpc).toHaveBeenCalledTimes(1);
     });
-    await user.type(
-      screen.getByLabelText(/이 시각 이후/),
-      '2026-05-19T00:00:00Z',
-    );
+    await user.type(screen.getByLabelText(/이 시각 이후/), '2026-05-19T00:00:00Z');
     await user.click(screen.getByTestId('audit-view-refresh'));
     await waitFor(() => {
       expect(mockCallCoreRpc).toHaveBeenLastCalledWith({

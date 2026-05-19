@@ -25,10 +25,7 @@ export default function SecuritySettingsPanel() {
   };
 
   return (
-    <section
-      data-testid="security-settings-panel"
-      className="space-y-6 px-4 py-5 sm:px-6 lg:px-8"
-    >
+    <section data-testid="security-settings-panel" className="space-y-6 px-4 py-5 sm:px-6 lg:px-8">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold text-stone-900">보안 설정</h1>
         <p className="text-sm text-stone-600">
@@ -37,8 +34,7 @@ export default function SecuritySettingsPanel() {
             href="https://github.com/tinyhumansai/openhuman/blob/main/gitbooks/developing/security.md"
             target="_blank"
             rel="noreferrer noopener"
-            className="ml-1 text-ocean-600 underline"
-          >
+            className="ml-1 text-ocean-600 underline">
             security.md
           </a>
           를 참고하세요.

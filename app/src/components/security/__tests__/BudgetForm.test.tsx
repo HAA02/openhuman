@@ -4,13 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import BudgetForm from '../BudgetForm';
 
-const { mockCallCoreRpc } = vi.hoisted(() => ({
-  mockCallCoreRpc: vi.fn(),
-}));
+const { mockCallCoreRpc } = vi.hoisted(() => ({ mockCallCoreRpc: vi.fn() }));
 
-vi.mock('../../../services/coreRpcClient', () => ({
-  callCoreRpc: mockCallCoreRpc,
-}));
+vi.mock('../../../services/coreRpcClient', () => ({ callCoreRpc: mockCallCoreRpc }));
 
 describe('BudgetForm', () => {
   beforeEach(() => {
@@ -24,11 +20,7 @@ describe('BudgetForm', () => {
 
   it('submits security.set_budget with the daily scope and parsed limit', async () => {
     const user = userEvent.setup();
-    mockCallCoreRpc.mockResolvedValue({
-      budget_id: 'b1',
-      scope: 'daily',
-      limit_usd: 10,
-    });
+    mockCallCoreRpc.mockResolvedValue({ budget_id: 'b1', scope: 'daily', limit_usd: 10 });
     render(<BudgetForm scope="daily" />);
     await user.type(screen.getByLabelText(/일일 한도/), '10');
     await user.click(screen.getByRole('button', { name: '저장' }));
@@ -54,20 +46,12 @@ describe('BudgetForm', () => {
   it('invokes the onSaved callback after a successful save', async () => {
     const user = userEvent.setup();
     const onSaved = vi.fn();
-    mockCallCoreRpc.mockResolvedValue({
-      budget_id: 'b2',
-      scope: 'monthly',
-      limit_usd: 200,
-    });
+    mockCallCoreRpc.mockResolvedValue({ budget_id: 'b2', scope: 'monthly', limit_usd: 200 });
     render(<BudgetForm scope="monthly" onSaved={onSaved} />);
     await user.type(screen.getByLabelText(/월간 한도/), '200');
     await user.click(screen.getByRole('button', { name: '저장' }));
     await waitFor(() => {
-      expect(onSaved).toHaveBeenCalledWith({
-        budget_id: 'b2',
-        scope: 'monthly',
-        limit_usd: 200,
-      });
+      expect(onSaved).toHaveBeenCalledWith({ budget_id: 'b2', scope: 'monthly', limit_usd: 200 });
     });
   });
 
@@ -89,7 +73,7 @@ describe('BudgetForm', () => {
     mockCallCoreRpc.mockReturnValue(
       new Promise(res => {
         resolve = res;
-      }),
+      })
     );
     render(<BudgetForm scope="daily" />);
     await user.type(screen.getByLabelText(/일일 한도/), '1');

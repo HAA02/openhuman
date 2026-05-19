@@ -15,11 +15,7 @@ interface SetBudgetResponse {
   limit_usd: number;
 }
 
-const SCOPE_LABEL: Record<BudgetScope, string> = {
-  daily: '일일',
-  weekly: '주간',
-  monthly: '월간',
-};
+const SCOPE_LABEL: Record<BudgetScope, string> = { daily: '일일', weekly: '주간', monthly: '월간' };
 
 /**
  * Budget input form bound to `security.set_budget` (PRD Phase 3 §2.3).
@@ -50,7 +46,9 @@ export default function BudgetForm({ scope, onSaved }: BudgetFormProps) {
         method: 'security.set_budget',
         params: { scope, limit_usd: parsedLimit },
       });
-      setSavedMessage(`${SCOPE_LABEL[scope]} 한도가 $${response.limit_usd.toFixed(2)}로 저장되었습니다.`);
+      setSavedMessage(
+        `${SCOPE_LABEL[scope]} 한도가 $${response.limit_usd.toFixed(2)}로 저장되었습니다.`
+      );
       onSaved?.(response);
     } catch (e) {
       setError(e instanceof Error ? e.message : '한도 저장에 실패했습니다.');
@@ -66,8 +64,7 @@ export default function BudgetForm({ scope, onSaved }: BudgetFormProps) {
       data-testid={`budget-form-${scope}`}
       onSubmit={handleSubmit}
       className="space-y-2"
-      noValidate
-    >
+      noValidate>
       <label htmlFor={inputId} className="block text-sm font-medium text-stone-700">
         {SCOPE_LABEL[scope]} 한도 (USD)
       </label>
@@ -89,8 +86,7 @@ export default function BudgetForm({ scope, onSaved }: BudgetFormProps) {
         <button
           type="submit"
           disabled={busy || limit.length === 0}
-          className="rounded-md bg-ocean-600 px-3 py-1 text-sm font-medium text-white hover:bg-ocean-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+          className="rounded-md bg-ocean-600 px-3 py-1 text-sm font-medium text-white hover:bg-ocean-700 disabled:cursor-not-allowed disabled:opacity-50">
           {busy ? '저장 중…' : '저장'}
         </button>
       </div>
@@ -99,16 +95,12 @@ export default function BudgetForm({ scope, onSaved }: BudgetFormProps) {
           id={`${inputId}-error`}
           role="alert"
           data-testid={`budget-form-${scope}-error`}
-          className="text-xs text-coral-600"
-        >
+          className="text-xs text-coral-600">
           {error}
         </p>
       )}
       {savedMessage && !error && (
-        <p
-          data-testid={`budget-form-${scope}-success`}
-          className="text-xs text-sage-600"
-        >
+        <p data-testid={`budget-form-${scope}-success`} className="text-xs text-sage-600">
           {savedMessage}
         </p>
       )}
