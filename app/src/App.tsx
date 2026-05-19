@@ -61,7 +61,14 @@ function App() {
                         <AppShell />
                         <DictationHotkeyManager />
                         <LocalAIDownloadSnackbar />
-                        <AppUpdatePrompt />
+                        {/* Hidden in OFFLINE/dev mode — auto-update prompts
+                            overlap the chat UI repeatedly when the auto-
+                            updater can't reach the release feed (closed
+                            network) or the user is intentionally on an
+                            older build for testing. */}
+                        {import.meta.env.VITE_OPENHUMAN_OFFLINE === '1' ? null : (
+                          <AppUpdatePrompt />
+                        )}
                       </ServiceBlockingGate>
                     </CommandProvider>
                   </Router>

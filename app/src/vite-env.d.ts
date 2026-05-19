@@ -10,6 +10,7 @@ interface ImportMetaEnv {
   readonly VITE_BUILD_SHA?: string;
   readonly VITE_DEV_JWT_TOKEN?: string;
   readonly VITE_DEV_FORCE_ONBOARDING?: string;
+  readonly VITE_OPENHUMAN_OFFLINE?: string;
   readonly DEV: boolean;
   readonly MODE: string;
 }

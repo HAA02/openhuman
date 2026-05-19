@@ -6,6 +6,9 @@ description = "Core RPC URL, sidecar restart, dictation hotkey, webview-account,
 allow = [
     "core_rpc_url",
     "core_rpc_token",
+    # Direct codex CLI bridge that bypasses the JSON-RPC HTTP layer so
+    # long-running LLM completions are not subject to fetch-side stalls.
+    "codex_complete",
     "restart_core_process",
     # `start_core_process` is invoked by BootCheckGate after the user picks
     # Local mode, before redux-persist hydrates the rest of the app (#1316).

@@ -4589,6 +4589,7 @@ dependencies = [
  "iana-time-zone",
  "image",
  "lettre",
+ "libc",
  "log",
  "mail-parser",
  "nu-ansi-term 0.46.0",

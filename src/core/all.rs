@@ -125,6 +125,8 @@ fn build_registered_controllers() -> Vec<RegisteredController> {
     controllers.extend(crate::openhuman::encryption::all_encryption_registered_controllers());
     // Security policy metadata
     controllers.extend(crate::openhuman::security::all_security_registered_controllers());
+    // Codex CLI lightweight LLM wrapper
+    controllers.extend(crate::openhuman::codex_cli::all_codex_cli_registered_controllers());
     // Background heartbeat loop controls
     controllers.extend(crate::openhuman::heartbeat::all_heartbeat_registered_controllers());
     // Token usage and billing cost tracking
@@ -249,6 +251,7 @@ fn build_declared_controller_schemas() -> Vec<ControllerSchema> {
     schemas.extend(crate::openhuman::doctor::all_doctor_controller_schemas());
     schemas.extend(crate::openhuman::encryption::all_encryption_controller_schemas());
     schemas.extend(crate::openhuman::security::all_security_controller_schemas());
+    schemas.extend(crate::openhuman::codex_cli::all_codex_cli_controller_schemas());
     schemas.extend(crate::openhuman::heartbeat::all_heartbeat_controller_schemas());
     schemas.extend(crate::openhuman::cost::all_cost_controller_schemas());
     schemas.extend(crate::openhuman::autocomplete::all_autocomplete_controller_schemas());
@@ -331,6 +334,9 @@ pub fn namespace_description(namespace: &str) -> Option<&'static str> {
         "auth" => Some("Manage app session and provider credentials."),
         "autocomplete" => Some("Inline autocomplete engine controls and style settings."),
         "channels" => Some("Channel definitions, connections, and lifecycle management."),
+        "codex" => Some(
+            "Lightweight LLM provider that wraps the external `codex` CLI in headless `exec` mode."
+        ),
         "composio" => Some(
             "Composio OAuth integrations proxied via the backend — toolkits, connections, tools, and actions."
         ),

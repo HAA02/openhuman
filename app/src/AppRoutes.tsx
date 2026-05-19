@@ -6,6 +6,7 @@ import PublicRoute from './components/PublicRoute';
 import HumanPage from './features/human/HumanPage';
 import Accounts from './pages/Accounts';
 import Channels from './pages/Channels';
+import CodexChat from './pages/CodexChat';
 import Home from './pages/Home';
 import Intelligence from './pages/Intelligence';
 import Invites from './pages/Invites';
@@ -119,6 +120,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requireAuth={true}>
             <Rewards />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/codex"
+        element={
+          <ProtectedRoute requireAuth={true}>
+            <CodexChat />
           </ProtectedRoute>
         }
       />

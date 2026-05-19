@@ -4558,6 +4558,7 @@ dependencies = [
  "image",
  "landlock",
  "lettre",
+ "libc",
  "log",
  "mail-parser",
  "matrix-sdk",

@@ -59,6 +59,32 @@ fn core_rpc_url() -> String {
     crate::core_rpc::core_rpc_url_value()
 }
 
+/// Direct Tauri-command bridge to the codex CLI. Avoids the JSON-RPC HTTP
+/// path so long-running LLM completions are not subject to whatever stalls
+/// the frontend fetch layer. Returns a flat object the React side can use
+/// without unwrapping an RpcOutcome envelope.
+#[tauri::command]
+async fn codex_complete(
+    prompt: String,
+    timeout_ms: Option<u64>,
+) -> Result<serde_json::Value, String> {
+    use openhuman_core::openhuman::codex_cli::runner::{run_headless, CodexOptions, CodexResult};
+    let opts = CodexOptions {
+        model: None,
+        cwd: None,
+        timeout_ms,
+        sandbox: None,
+    };
+    let result: CodexResult = tokio::task::spawn_blocking(move || run_headless(&prompt, opts))
+        .await
+        .map_err(|e| format!("codex worker join failed: {e}"))??;
+    Ok(serde_json::json!({
+        "content": result.content,
+        "model": result.model,
+        "elapsed_ms": result.elapsed_ms,
+    }))
+}
+
 /// Tauri command: return the per-process bearer token that must be sent with
 /// every core RPC request as `Authorization: Bearer <token>`.
 ///
@@ -2020,6 +2046,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             core_rpc_url,
             core_rpc_token,
+            codex_complete,
             overlay_parent_rpc_url,
             process_diagnostics_list_owned,
             check_core_update,

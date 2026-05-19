@@ -11,6 +11,11 @@ interface CoreRpcRelayRequest {
   method: string;
   params?: unknown;
   serviceManaged?: boolean;
+  /**
+   * Per-call override for the fetch deadline (ms). Used for slow LLM
+   * completions where the default 30s ceiling is too tight. Capped to 10 min.
+   */
+  timeoutMs?: number;
 }
 
 interface JsonRpcRequestBody {
@@ -301,8 +306,13 @@ export async function callCoreRpc<T>({
   method,
   params,
   serviceManaged = false, // kept for compatibility; direct frontend RPC does not use relay-level routing.
+  timeoutMs,
 }: CoreRpcRelayRequest): Promise<T> {
   void serviceManaged;
+  const effectiveTimeoutMs = Math.min(
+    Math.max(timeoutMs ?? CORE_RPC_TIMEOUT_MS, 1_000),
+    10 * 60 * 1_000
+  );
 
   if (method.startsWith('ai.')) {
     return dispatchLocalAiMethod(method, (params ?? {}) as Record<string, unknown>) as T;
@@ -332,7 +342,7 @@ export async function callCoreRpc<T>({
     // manual AbortController + setTimeout rather than AbortSignal.timeout()
     // so test fake timers can drive the abort deterministically.
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), CORE_RPC_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), effectiveTimeoutMs);
     let response: Response;
     try {
       response = await fetch(rpcUrl, {
@@ -343,7 +353,7 @@ export async function callCoreRpc<T>({
       });
     } catch (fetchErr) {
       if (controller.signal.aborted) {
-        throw new Error(`Core RPC ${payload.method} timed out after ${CORE_RPC_TIMEOUT_MS}ms`);
+        throw new Error(`Core RPC ${payload.method} timed out after ${effectiveTimeoutMs}ms`);
       }
       throw fetchErr;
     } finally {

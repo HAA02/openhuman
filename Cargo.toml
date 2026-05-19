@@ -117,6 +117,7 @@ socketioxide = { version = "0.15", features = ["extensions"] }
 whisper-rs = "0.16"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 tempfile = "3"
+libc = "0.2"
 cpal = "0.15"
 hound = "3.5"
 enigo = "0.3"

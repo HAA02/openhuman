@@ -179,6 +179,14 @@ const Home = () => {
             className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-xl transition-colors duration-200">
             Message OpenHuman
           </button>
+
+          {/* Offline LLM entry — local codex CLI, no backend / OAuth required. */}
+          <button
+            type="button"
+            onClick={() => navigate('/codex')}
+            className="mt-2 w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-medium rounded-xl border border-stone-200 transition-colors duration-200">
+            Codex CLI (offline LLM)
+          </button>
         </div>
 
         {showEarlyBirdy && <EarlyBirdyBanner onDismiss={handleDismissEarlyBirdy} />}

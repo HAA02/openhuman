@@ -3,6 +3,10 @@ import { Navigate } from 'react-router-dom';
 import { useCoreState } from '../providers/CoreStateProvider';
 import RouteLoadingScreen from './RouteLoadingScreen';
 
+// HARDCODED dev bypass — skips Welcome/OAuth gate for closed-network testing.
+// Set back to false to restore the real auth flow.
+const OFFLINE_BYPASS = true;
+
 interface PublicRouteProps {
   children: React.ReactNode;
   redirectTo?: string;
@@ -21,7 +25,8 @@ const PublicRoute = ({ children, redirectTo }: PublicRouteProps) => {
 
   // If user is logged in, always go to home.
   // Home itself will redirect to onboarding if needed.
-  if (snapshot.sessionToken) {
+  // OFFLINE_BYPASS: skip the Welcome/OAuth gate entirely (closed-network dev).
+  if (snapshot.sessionToken || OFFLINE_BYPASS) {
     return <Navigate to={redirectTo || '/home'} replace />;
   }
 

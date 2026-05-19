@@ -22,6 +22,7 @@ pub mod approval;
 pub mod autocomplete;
 pub mod billing;
 pub mod channels;
+pub mod codex_cli;
 pub mod composio;
 pub mod config;
 pub mod context;
