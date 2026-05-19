@@ -177,7 +177,11 @@ mod tests {
         let skill = SkillId::test();
         gate.grant_many(
             &skill,
-            &[Permission::FileRead, Permission::FileWrite, Permission::Network],
+            &[
+                Permission::FileRead,
+                Permission::FileWrite,
+                Permission::Network,
+            ],
         );
         let granted = gate.granted(&skill);
         assert_eq!(granted.len(), 3);

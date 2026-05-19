@@ -103,7 +103,9 @@ mod tests {
     use super::*;
 
     fn ts(y: i32, m: u32, d: u32, h: u32) -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(y, m, d, h, 0, 0).single().expect("valid timestamp")
+        Utc.with_ymd_and_hms(y, m, d, h, 0, 0)
+            .single()
+            .expect("valid timestamp")
     }
 
     #[test]

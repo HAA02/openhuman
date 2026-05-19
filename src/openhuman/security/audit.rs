@@ -312,7 +312,10 @@ pub fn export_audit_events(
 ) -> Result<AuditExportResult> {
     let records = read_matching_events(log_path, from, to)?;
 
-    if let Some(parent) = output_path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+    if let Some(parent) = output_path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
         std::fs::create_dir_all(parent)?;
     }
 
@@ -552,11 +555,21 @@ mod tests {
         assert!(result.has_more);
         assert_eq!(result.records.len(), 2);
         assert_eq!(
-            result.records[0].action.as_ref().unwrap().command.as_deref(),
+            result.records[0]
+                .action
+                .as_ref()
+                .unwrap()
+                .command
+                .as_deref(),
             Some("two")
         );
         assert_eq!(
-            result.records[1].action.as_ref().unwrap().command.as_deref(),
+            result.records[1]
+                .action
+                .as_ref()
+                .unwrap()
+                .command
+                .as_deref(),
             Some("three")
         );
         Ok(())

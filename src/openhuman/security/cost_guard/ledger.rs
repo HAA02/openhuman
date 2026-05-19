@@ -233,7 +233,11 @@ impl CostGuard {
         }
         let now = Utc::now();
         let mut warning: Option<String> = None;
-        for scope in [BudgetScope::Daily, BudgetScope::Weekly, BudgetScope::Monthly] {
+        for scope in [
+            BudgetScope::Daily,
+            BudgetScope::Weekly,
+            BudgetScope::Monthly,
+        ] {
             let Some(budget) = self.active_budget(scope)? else {
                 continue;
             };

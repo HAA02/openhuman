@@ -83,7 +83,10 @@ async fn local_ai_prompt_audits_pre_and_post_without_raw_prompt() {
 
     let audit_path = tmp.path().join("audit.log");
     let content = std::fs::read_to_string(&audit_path).expect("audit log should be written");
-    assert!(!content.contains(prompt), "audit log must not contain raw prompt");
+    assert!(
+        !content.contains(prompt),
+        "audit log must not contain raw prompt"
+    );
     assert!(content.contains("operation=local_ai_prompt phase=pre"));
     assert!(content.contains("operation=local_ai_prompt phase=post"));
     assert!(content.contains("prompt_hash="));
@@ -108,7 +111,10 @@ async fn local_ai_prompt_injection_block_is_audited_without_runtime_call() {
 
     let content = std::fs::read_to_string(tmp.path().join("audit.log"))
         .expect("blocked prompt audit log should be written");
-    assert!(!content.contains(prompt), "audit log must not contain raw prompt");
+    assert!(
+        !content.contains(prompt),
+        "audit log must not contain raw prompt"
+    );
     assert!(content.contains("operation=local_ai_prompt phase=pre"));
     assert!(!content.contains("operation=local_ai_prompt phase=post"));
 }

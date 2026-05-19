@@ -124,7 +124,9 @@ fn handle_verify_skill(params: Map<String, Value>) -> ControllerFuture {
         let manifest_path = params
             .get("manifest_path")
             .and_then(Value::as_str)
-            .ok_or_else(|| "security.verify_skill requires string param `manifest_path`".to_string())?;
+            .ok_or_else(|| {
+                "security.verify_skill requires string param `manifest_path`".to_string()
+            })?;
         let expected = params
             .get("expected_sha256")
             .and_then(Value::as_str)

@@ -39,8 +39,7 @@ fn load_corpus() -> Corpus {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(CORPUS_PATH);
     let raw = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
-    serde_json::from_str(&raw)
-        .unwrap_or_else(|e| panic!("invalid {}: {e}", path.display()))
+    serde_json::from_str(&raw).unwrap_or_else(|e| panic!("invalid {}: {e}", path.display()))
 }
 
 fn scan(text: &str) -> PromptEnforcementAction {
@@ -67,7 +66,10 @@ fn is_block(action: PromptEnforcementAction) -> bool {
 fn injection_corpus_recall_floor() {
     let corpus = load_corpus();
     let total = corpus.injections.len();
-    assert!(total >= 50, "corpus must hold ≥ 50 injection samples (have {total})");
+    assert!(
+        total >= 50,
+        "corpus must hold ≥ 50 injection samples (have {total})"
+    );
 
     let mut misses: Vec<&str> = Vec::new();
     for sample in &corpus.injections {

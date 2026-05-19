@@ -259,12 +259,14 @@ fn parse_scope(params: &Map<String, Value>) -> Result<BudgetScope, String> {
         .get("scope")
         .and_then(Value::as_str)
         .ok_or_else(|| "missing string param `scope`".to_string())?;
-    BudgetScope::parse(raw).ok_or_else(|| format!("unknown scope `{raw}`; expected daily/weekly/monthly"))
+    BudgetScope::parse(raw)
+        .ok_or_else(|| format!("unknown scope `{raw}`; expected daily/weekly/monthly"))
 }
 
 async fn open_guard() -> Result<CostGuard, String> {
     let dir = active_data_dir().await;
-    CostGuard::open(&dir).map_err(|e| format!("failed to open cost guard at {}: {e}", dir.display()))
+    CostGuard::open(&dir)
+        .map_err(|e| format!("failed to open cost guard at {}: {e}", dir.display()))
 }
 
 async fn active_data_dir() -> PathBuf {

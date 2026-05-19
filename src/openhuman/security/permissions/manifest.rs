@@ -214,7 +214,11 @@ mod tests {
         let baseline = verify_manifest(&path, None);
         assert_eq!(baseline.verdict, ManifestVerdict::Valid);
         // Tamper: rewrite with a different body.
-        fs::write(&path, "---\nname: demo\ndescription: tampered\n---\nNew body\n").unwrap();
+        fs::write(
+            &path,
+            "---\nname: demo\ndescription: tampered\n---\nNew body\n",
+        )
+        .unwrap();
         let v = verify_manifest(&path, Some(&baseline.sha256));
         assert_eq!(v.verdict, ManifestVerdict::Invalid);
         assert!(v.issues.iter().any(|i| i.contains("sha256 mismatch")));
@@ -235,7 +239,9 @@ mod tests {
     fn sha256_is_deterministic_and_lowercase() {
         let h = sha256_hex(b"hello");
         assert_eq!(h.len(), 64);
-        assert!(h.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+        assert!(h
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
         assert_eq!(sha256_hex(b"hello"), h);
     }
 }

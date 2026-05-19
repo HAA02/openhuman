@@ -219,11 +219,7 @@ fn handle_get_audit(params: Map<String, Value>) -> ControllerFuture {
     Box::pin(async move {
         let since = optional_string(&params, "since")?;
         let limit = optional_u64(&params, "limit")?.map(|value| value as usize);
-        to_json(crate::openhuman::security::rpc::security_get_audit(
-            since.as_deref(),
-            limit,
-        )
-        .await?)
+        to_json(crate::openhuman::security::rpc::security_get_audit(since.as_deref(), limit).await?)
     })
 }
 
@@ -235,12 +231,14 @@ fn handle_export_audit(params: Map<String, Value>) -> ControllerFuture {
             .ok_or_else(|| "security.export_audit requires string param `path`".to_string())?;
         let from = optional_string(&params, "from")?;
         let to = optional_string(&params, "to")?;
-        to_json(crate::openhuman::security::rpc::security_export_audit(
-            path,
-            from.as_deref(),
-            to.as_deref(),
+        to_json(
+            crate::openhuman::security::rpc::security_export_audit(
+                path,
+                from.as_deref(),
+                to.as_deref(),
+            )
+            .await?,
         )
-        .await?)
     })
 }
 

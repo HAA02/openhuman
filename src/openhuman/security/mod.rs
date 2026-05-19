@@ -6,13 +6,13 @@ pub mod audit;
 pub mod bubblewrap;
 pub mod cost_guard;
 pub mod detect;
-pub mod permissions;
-pub mod redact;
 pub mod docker;
 pub mod firejail;
 pub mod landlock;
 pub mod pairing;
+pub mod permissions;
 pub mod policy;
+pub mod redact;
 pub mod secrets;
 pub mod traits;
 
